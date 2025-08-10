@@ -12,8 +12,12 @@ jobs:
   create-tag:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
       
       - name: Get version from package.json
         id: package-version
@@ -52,6 +56,8 @@ jobs:
     needs: create-tag
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       matrix:
         os: [macos-latest, windows-latest]
@@ -59,6 +65,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -98,8 +106,13 @@ jobs:
     needs: create-tag
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Use Node.js
         uses: actions/setup-node@v4
