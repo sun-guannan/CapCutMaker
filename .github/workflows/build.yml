@@ -28,54 +28,6 @@ jobs:
     - name: Install dependencies
       run: yarn install --frozen-lockfile
     
-    # 仅在main分支上的push事件时执行版本更新和标签创建
-    - name: Extract version from branch
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'macos-latest'
-      id: extract_version
-      run: |
-        # 从package.json中提取当前版本
-        CURRENT_VERSION=$(node -p "require('./package.json').version")
-        echo "Current version: $CURRENT_VERSION"
-        echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-        
-        # 检查是否有版本更新提交信息
-        VERSION_PATTERN="version = ([0-9]+\.[0-9]+\.[0-9]+)"
-        COMMIT_MSG=$(git log -1 --pretty=%B)
-        if [[ $COMMIT_MSG =~ $VERSION_PATTERN ]]; then
-          NEW_VERSION="${BASH_REMATCH[1]}"
-          echo "Found version in commit message: $NEW_VERSION"
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "version_changed=true" >> $GITHUB_OUTPUT
-        else
-          echo "No version change detected in commit message"
-          echo "new_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          echo "version_changed=false" >> $GITHUB_OUTPUT
-        fi
-      shell: bash
-    
-    - name: Update version
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'macos-latest' && steps.extract_version.outputs.version_changed == 'true'
-      run: |
-        # 更新package.json中的版本号
-        NEW_VERSION="${{ steps.extract_version.outputs.new_version }}"
-        npm version $NEW_VERSION --no-git-tag-version
-        
-        # 配置Git
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        
-        # 提交版本更新
-        git add package.json
-        git commit -m "自动更新版本至 $NEW_VERSION [skip ci]"
-        
-        # 创建标签
-        git tag v$NEW_VERSION
-        
-        # 推送更改和标签
-        git push
-        git push --tags
-      shell: bash
-    
     - name: Build application
       run: |
         if [ "${{ matrix.os }}" == "macos-latest" ]; then
@@ -84,6 +36,8 @@ jobs:
           yarn build:win
         fi
       shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4  # 从v3升级到v4
