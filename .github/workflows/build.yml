@@ -20,7 +20,7 @@ jobs:
     - uses: actions/checkout@v4  # 从v3升级到v4
       with:
         fetch-depth: 0
-        token: ${{ secrets.GH_TOKEN }}  # 使用GITHUB_TOKEN而不是SSH密钥
+        token: ${{ secrets.GH_TOKEN }} 
     
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4  # 从v3升级到v4
@@ -40,7 +40,7 @@ jobs:
         fi
       shell: bash
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 使用GITHUB_TOKEN而不是GH_TOKEN
+        GH_TOKEN: ${{ secrets.GH_TOKEN }} 
     
     - name: Upload macOS artifacts
       if: matrix.os == 'macos-latest'
