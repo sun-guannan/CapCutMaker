@@ -2,7 +2,7 @@ name: Build and Auto Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev ]  # 添加dev分支
   pull_request:
     branches: [ main ]
 
@@ -86,7 +86,7 @@ jobs:
       shell: bash
     
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # 从v3升级到v4
       with:
         name: dist-${{ matrix.os }}
         path: dist
