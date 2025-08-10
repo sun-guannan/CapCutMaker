@@ -39,6 +39,13 @@
       border-radius: 4px;
       word-break: break-all;
     }
+    .update-message {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #e8f4fc;
+      border-radius: 4px;
+      color: #2980b9;
+    }
   </style>
 </head>
 <body>
@@ -53,6 +60,10 @@
       
       <div id="protocol-data" class="protocol-data">
         <p>协议数据将显示在这里...</p>
+      </div>
+      
+      <div id="update-message" class="update-message">
+        <p>更新状态将显示在这里...</p>
       </div>
     </div>
   </div>
@@ -90,6 +101,15 @@
         <p>${url}</p>
         <p><strong>解析后的参数:</strong></p>
         <pre>${parseUrlParams(url)}</pre>
+      `;
+    });
+    
+    // 监听来自主进程的更新消息
+    ipcRenderer.on('update-message', (event, text) => {
+      console.log('Update message:', text);
+      document.getElementById('update-message').innerHTML = `
+        <p><strong>更新状态:</strong></p>
+        <p>${text}</p>
       `;
     });
     
