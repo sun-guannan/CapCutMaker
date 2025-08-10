@@ -1,7 +1,8 @@
-const { app, BrowserWindow, protocol } = require('electron');
+const { app, BrowserWindow, protocol, ipcMain, dialog } = require('electron');
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
+const { autoUpdater } = require('electron-updater');
 
 // 读取package.json获取版本号
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
@@ -26,6 +27,56 @@ console.log(`App Version: ${appVersion}, Version Code: ${versionCode}`);
 // 垃圾回收的时候，window对象将会自动的关闭
 let mainWindow;
 
+// 配置自动更新
+autoUpdater.logger = require('electron-log');
+autoUpdater.logger.transports.file.level = 'info';
+
+// 自动更新事件监听
+autoUpdater.on('checking-for-update', () => {
+  sendStatusToWindow('正在检查更新...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  sendStatusToWindow('发现新版本，正在下载...');
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  sendStatusToWindow('当前已是最新版本');
+});
+
+autoUpdater.on('error', (err) => {
+  sendStatusToWindow('更新出错: ' + err.toString());
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  let logMessage = `下载速度: ${progressObj.bytesPerSecond} - 已下载 ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
+  sendStatusToWindow(logMessage);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  sendStatusToWindow('更新已下载，将在退出时安装');
+  // 询问用户是否立即重启应用
+  dialog.showMessageBox({
+    type: 'info',
+    title: '应用更新',
+    message: '发现新版本，已下载完成',
+    detail: '是否现在重启应用并安装更新？',
+    buttons: ['是', '否']
+  }).then((returnValue) => {
+    if (returnValue.response === 0) {
+      autoUpdater.quitAndInstall();
+    }
+  });
+});
+
+// 发送更新消息到渲染进程
+function sendStatusToWindow(text) {
+  console.log(text);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-message', text);
+  }
+}
+
 function createWindow() {
   // 创建浏览器窗口
   mainWindow = new BrowserWindow({
@@ -48,6 +99,9 @@ function createWindow() {
   mainWindow.on('closed', function () {
     mainWindow = null;
   });
+  
+  // 检查更新
+  autoUpdater.checkForUpdatesAndNotify();
 }
 
 // 注册自定义协议

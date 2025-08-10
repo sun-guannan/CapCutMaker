@@ -2,6 +2,8 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
 
@@ -9,8 +11,13 @@ jobs:
   # 创建版本标签
   create-tag:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
       
       - name: Get version from package.json
         id: package-version
@@ -19,7 +26,7 @@ jobs:
       - name: Create Tag
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_TOKEN }}
           script: |
             const version = '${{ steps.package-version.outputs.version }}'
             const tagName = `v${version}`
@@ -47,17 +54,22 @@ jobs:
   # 构建和发布应用
   release:
     needs: create-tag
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       matrix:
         os: [macos-latest, windows-latest]
-        node-version: [24.x]  # 从16.x升级到24.x
+        node-version: [24.x]
 
     steps:
-    - uses: actions/checkout@v4  # 从v3升级到v4
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GH_TOKEN }}
     
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4  # 从v3升级到v4
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -65,44 +77,60 @@ jobs:
     - name: Install dependencies
       run: yarn install --frozen-lockfile
     
-    - name: Build application
+    - name: Build and publish application
       run: |
         if [ "${{ matrix.os }}" == "macos-latest" ]; then
-          yarn build:mac --universal
+          yarn build:mac --universal --publish always
         else
-          yarn build:win
+          yarn build:win --publish always
         fi
       shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
-    - name: Create Release
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v1
       with:
         files: |
           dist/*.exe
           dist/*universal.dmg
+          dist/latest*.yml
         draft: false
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
   
-  # 发布npm包
+  # 发布到GitHub Packages
   publish-package:
     needs: create-tag
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
       
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24.x'
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@sunguannan'
           cache: 'yarn'
       
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       
-      - name: Publish to NPM
+      - name: Configure package for GitHub Packages
+        run: |
+          # 确保package.json中的name字段包含作用域
+          node -e "const pkg=require('./package.json'); pkg.name='@sunguannan/capcuthelper'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
+      
+      - name: Publish to GitHub Packages
         run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
