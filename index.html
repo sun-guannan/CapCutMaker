@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CapCutHelper</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      color: #2c3e50;
+      text-align: center;
+    }
+    .version {
+      text-align: center;
+      color: #7f8c8d;
+      margin-bottom: 20px;
+    }
+    .content {
+      line-height: 1.6;
+    }
+    .protocol-data {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CapCutHelper</h1>
+    <div class="version">版本 0.1.0</div>
+    
+    <div class="content">
+      <p>这是一个可以通过网页链接启动的Electron应用程序。</p>
+      <p>您可以使用以下协议链接来启动此应用：</p>
+      <code>capcuthelper://action?param=value</code>
+      
+      <div id="protocol-data" class="protocol-data">
+        <p>协议数据将显示在这里...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 引入electron的ipcRenderer模块
+    const { ipcRenderer } = require('electron');
+    
+    // 监听来自主进程的协议URL消息
+    ipcRenderer.on('protocol-url', (event, url) => {
+      console.log('Received protocol URL:', url);
+      document.getElementById('protocol-data').innerHTML = `
+        <p><strong>收到的协议URL:</strong></p>
+        <p>${url}</p>
+        <p><strong>解析后的参数:</strong></p>
+        <pre>${parseUrlParams(url)}</pre>
+      `;
+    });
+    
+    // 解析URL参数的函数
+    function parseUrlParams(protocolUrl) {
+      try {
+        // 移除协议前缀
+        const urlWithoutProtocol = protocolUrl.replace('capcuthelper://', '');
+        
+        // 分离路径和查询参数
+        const [path, queryString] = urlWithoutProtocol.split('?');
+        
+        const result = {
+          path: path,
+          params: {}
+        };
+        
+        // 解析查询参数
+        if (queryString) {
+          const params = new URLSearchParams(queryString);
+          params.forEach((value, key) => {
+            result.params[key] = value;
+          });
+        }
+        
+        return JSON.stringify(result, null, 2);
+      } catch (error) {
+        return `解析错误: ${error.message}`;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "name": "capcuthelper",
+  "version": "0.1.0",
+  "description": "CapCut Helper Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac --win",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "build": {
+    "appId": "com.capcuthelper.app",
+    "productName": "CapCutHelper",
+    "protocols": {
+      "name": "capcuthelper",
+      "schemes": [
+        "capcuthelper"
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "keywords": [
+    "capcuthelper",
+    "electron",
+    "desktop"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12"
+  }
+}

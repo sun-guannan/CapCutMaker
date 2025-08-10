@@ -1,0 +1,21 @@
+# 依赖
+node_modules/
+
+# 构建输出
+dist/
+out/
+
+# 日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# IDE配置
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
