@@ -8,10 +8,9 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
         node-version: [24.x]  # 从16.x升级到24.x
 
     steps:
@@ -29,12 +28,7 @@ jobs:
       run: yarn install --frozen-lockfile
     
     - name: Build application
-      run: |
-        if [ "${{ matrix.os }}" == "macos-latest" ]; then
-          yarn build:mac
-        else
-          yarn build:win
-        fi
+      run: yarn build:mac --universal
       shell: bash
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -42,5 +36,5 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4  # 从v3升级到v4
       with:
-        name: dist-${{ matrix.os }}
-        path: dist
+        name: dist-macos-dmg
+        path: dist/*universal.dmg
