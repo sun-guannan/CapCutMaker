@@ -1,6 +1,26 @@
 const { app, BrowserWindow, protocol } = require('electron');
 const path = require('path');
 const url = require('url');
+const fs = require('fs');
+
+// 读取package.json获取版本号
+const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+const appVersion = packageJson.version;
+
+// 生成version_code (每段版本号占3位)
+function generateVersionCode(version) {
+  const parts = version.split('.');
+  let versionCode = 0;
+  
+  for (let i = 0; i < parts.length; i++) {
+    versionCode = versionCode * 1000 + parseInt(parts[i]);
+  }
+  
+  return versionCode;
+}
+
+const versionCode = generateVersionCode(appVersion);
+console.log(`App Version: ${appVersion}, Version Code: ${versionCode}`);
 
 // 保持对window对象的全局引用，如果不这么做的话，当JavaScript对象被
 // 垃圾回收的时候，window对象将会自动的关闭
@@ -13,7 +33,8 @@ function createWindow() {
     height: 600,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      additionalArguments: [`--app-version=${appVersion}`, `--version-code=${versionCode}`]
     }
   });
 

@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>CapCutMaker</title>
+  <title>CapCutMaker2</title>
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
   <style>
     body {
@@ -44,7 +44,7 @@
 <body>
   <div class="container">
     <h1>CapCutHelper</h1>
-    <div class="version">版本 0.1.0</div>
+    <div class="version" id="version-info">加载中...</div>
     
     <div class="content">
       <p>这是一个可以通过网页链接启动的Electron应用程序。</p>
@@ -60,6 +60,27 @@
   <script>
     // 引入electron的ipcRenderer模块
     const { ipcRenderer } = require('electron');
+    
+    // 获取版本信息
+    function getVersionInfo() {
+      const args = process.argv;
+      let appVersion = "未知";
+      let versionCode = "未知";
+      
+      for (const arg of args) {
+        if (arg.startsWith('--app-version=')) {
+          appVersion = arg.split('=')[1];
+        } else if (arg.startsWith('--version-code=')) {
+          versionCode = arg.split('=')[1];
+        }
+      }
+      
+      return { appVersion, versionCode };
+    }
+    
+    // 显示版本信息
+    const { appVersion, versionCode } = getVersionInfo();
+    document.getElementById('version-info').textContent = `版本 ${appVersion} (版本码: ${versionCode})`;
     
     // 监听来自主进程的协议URL消息
     ipcRenderer.on('protocol-url', (event, url) => {

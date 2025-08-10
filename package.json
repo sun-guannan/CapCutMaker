@@ -1,6 +1,6 @@
 {
   "name": "capcuthelper",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {
@@ -20,7 +20,11 @@
       ]
     },
     "mac": {
-      "category": "public.app-category.utilities"
+      "category": "public.app-category.utilities",
+      "target": {
+        "target": "dmg",
+        "arch": ["universal"]
+      }
     },
     "win": {
       "target": "nsis"

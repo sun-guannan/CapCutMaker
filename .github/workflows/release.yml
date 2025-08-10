@@ -11,13 +11,13 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, windows-latest]
-        node-version: [16.x]
+        node-version: [24.x]  # 从16.x升级到24.x
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4  # 从v3升级到v4
     
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4  # 从v3升级到v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -28,7 +28,7 @@ jobs:
     - name: Build application
       run: |
         if [ "${{ matrix.os }}" == "macos-latest" ]; then
-          yarn build:mac
+          yarn build:mac --universal
         else
           yarn build:win
         fi
@@ -39,12 +39,7 @@ jobs:
       with:
         files: |
           dist/*.exe
-          dist/*.exe.blockmap
-          dist/*.dmg
-          dist/*.dmg.blockmap
-          dist/*.zip
-          dist/*.zip.blockmap
-          dist/latest*.yml
+          dist/*universal.dmg
         draft: false
         prerelease: false
       env:
