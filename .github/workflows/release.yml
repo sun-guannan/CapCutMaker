@@ -143,7 +143,7 @@ jobs:
       - name: Configure package for GitHub Packages
         run: |
           # 确保包名与仓库名完全匹配（包括大小写）
-          node -e "const pkg=require('./package.json'); pkg.name='@sun-guannan/CapCutMaker'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
+          node -e "const pkg=require('./package.json'); pkg.name='@sun-guannan/capcutmaker'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
       
       - name: Publish to GitHub Packages
         run: npm publish --access=public
