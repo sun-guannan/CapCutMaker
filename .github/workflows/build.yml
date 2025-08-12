@@ -2,9 +2,7 @@ name: Build and Auto Release
 
 on:
   push:
-    branches: [ main, dev ]  # 添加dev分支
-  pull_request:
-    branches: [ main ]
+    branches: [ dev ]  # 添加dev分支
 
 jobs:
   build:

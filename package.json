@@ -1,6 +1,6 @@
 {
-  "name": "capcuthelper",
-  "version": "0.1.1",
+  "name": "capcutmaker",
+  "version": "0.1.2",
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {
@@ -12,12 +12,12 @@
     "publish": "electron-builder --publish always"
   },
   "build": {
-    "appId": "com.capcuthelper.app",
-    "productName": "CapCutHelper",
+    "appId": "com.capcutmaker.app",
+    "productName": "CapCutMaker",
     "protocols": {
-      "name": "capcuthelper",
+      "name": "capcutmaker",
       "schemes": [
-        "capcuthelper"
+        "capcutmaker"
       ]
     },
     "mac": {
@@ -42,12 +42,12 @@
       {
         "provider": "github",
         "owner": "sunguannan",
-        "repo": "CapCutHelper"
+        "repo": "CapCutMaker"
       }
     ]
   },
   "keywords": [
-    "capcuthelper",
+    "capcutmaker",
     "electron",
     "desktop"
   ],
