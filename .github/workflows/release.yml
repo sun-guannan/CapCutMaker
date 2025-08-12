@@ -6,6 +6,7 @@ on:
       - main
     tags:
       - 'v*'
+
 jobs:
   # 任务1：只创建 Tag。只在 main 分支 push 时运行。
   create-tag:
@@ -30,7 +31,6 @@ jobs:
             const version = '${{ steps.package-version.outputs.version }}'
             const tagName = `v${version}`
             
-            // 检查tag是否已存在
             try {
               await github.rest.git.getRef({
                 owner: context.repo.owner,
@@ -39,7 +39,6 @@ jobs:
               })
               console.log(`Tag ${tagName} already exists.`)
             } catch (error) {
-              // 创建新tag
               const sha = context.sha
               await github.rest.git.createRef({
                 owner: context.repo.owner,
@@ -49,11 +48,12 @@ jobs:
               })
               console.log(`Created tag ${tagName} at ${sha}`)
             }
-  
-  # 任务2：构建和发布应用。只在 tag 被推送到仓库时运行。
-  release:
-    if: startsWith(github.ref, 'refs/tags/')
+
+  # 任务2：并行构建，并上传构建产物（artifacts）
+  build-and-upload:
     runs-on: ${{ matrix.os }}
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: create-tag
     permissions:
       contents: write
     strategy:
@@ -63,8 +63,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GH_TOKEN }}
     
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -83,23 +81,48 @@ jobs:
           yarn build:win
         fi
       shell: bash
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
-    - name: Create or Update Release and Upload Assets
-      uses: softprops/action-gh-release@v2
+    # 这一步是关键！上传构建产物，而不是直接发布到 Release
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
       with:
-        files: |
-          dist/*.exe
-          dist/*universal.dmg
-          dist/latest*.yml
-        # `tag_name` 参数是必须的，它会告诉 action 使用哪个 tag
-        tag_name: ${{ github.ref }}
-        name: ${{ github.ref }}
-        draft: false
-        prerelease: false
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        name: ${{ matrix.os }}-build-artifacts
+        path: dist/
+
+  # 任务3：在所有构建任务成功后，统一创建 Release 并上传所有附件
+  release-after-build:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    # 这个任务依赖于所有的构建任务
+    needs: build-and-upload
+    permissions:
+      contents: write
+    
+    steps:
+      # 下载所有构建产物
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: .
+
+      - name: List downloaded artifacts
+        run: ls -R
+
+      # 创建 Release 并上传所有附件
+      - name: Create GitHub Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            macos-latest-build-artifacts/*.dmg
+            windows-latest-build-artifacts/*.exe
+            macos-latest-build-artifacts/latest*.yml
+            windows-latest-build-artifacts/latest*.yml
+          tag_name: ${{ github.ref }}
+          name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
   
   # # 发布到GitHub Packages
   # publish-package:
