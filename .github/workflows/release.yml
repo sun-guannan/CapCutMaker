@@ -135,10 +135,15 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       
+      - name: Configure npm registry
+        run: |
+          echo "@sunguannan:registry=https://npm.pkg.github.com/" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_TOKEN }}" >> .npmrc
+      
       - name: Configure package for GitHub Packages
         run: |
           node -e "const pkg=require('./package.json'); pkg.name='@sunguannan/CapCutMaker'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
       - name: Publish to GitHub Packages
-        run: npm publish
+        run: npm publish --access=public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
