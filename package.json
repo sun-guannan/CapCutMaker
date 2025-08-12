@@ -32,6 +32,9 @@
         "github"
       ]
     },
+    "linux": {
+      "target": []
+    },
     "win": {
       "target": "nsis",
       "publish": [
