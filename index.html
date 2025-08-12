@@ -50,13 +50,13 @@
 </head>
 <body>
   <div class="container">
-    <h1>CapCutHelper</h1>
+    <h1>CapCutMaker</h1>
     <div class="version" id="version-info">加载中...</div>
     
     <div class="content">
       <p>这是一个可以通过网页链接启动的Electron应用程序。</p>
       <p>您可以使用以下协议链接来启动此应用：</p>
-      <code>capcuthelper://action?param=value</code>
+      <code>capcutmaker://action?param=value</code>
       
       <div id="protocol-data" class="protocol-data">
         <p>协议数据将显示在这里...</p>
@@ -117,7 +117,7 @@
     function parseUrlParams(protocolUrl) {
       try {
         // 移除协议前缀
-        const urlWithoutProtocol = protocolUrl.replace('capcuthelper://', '');
+        const urlWithoutProtocol = protocolUrl.replace('capcutmaker://', '');
         
         // 分离路径和查询参数
         const [path, queryString] = urlWithoutProtocol.split('?');

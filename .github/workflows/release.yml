@@ -127,9 +127,7 @@ jobs:
       
       - name: Configure package for GitHub Packages
         run: |
-          # 确保package.json中的name字段包含作用域
-          node -e "const pkg=require('./package.json'); pkg.name='@sunguannan/capcuthelper'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
-      
+          node -e "const pkg=require('./package.json'); pkg.name='@sunguannan/CapCutMaker'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
       - name: Publish to GitHub Packages
         run: npm publish
         env:

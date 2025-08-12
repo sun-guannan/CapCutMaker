@@ -106,8 +106,8 @@ function createWindow() {
 
 // 注册自定义协议
 app.whenReady().then(() => {
-  protocol.registerFileProtocol('capcuthelper', (request, callback) => {
-    const url = request.url.substr('capcuthelper://'.length);
+  protocol.registerFileProtocol('capcutmaker', (request, callback) => {
+    const url = request.url.substr('capcutmaker://'.length);
     try {
       return callback(decodeURIComponent(url));
     } catch (error) {
@@ -130,7 +130,7 @@ if (!gotTheLock) {
       
       // 处理协议URL
       const url = commandLine.pop();
-      if (url.startsWith('capcuthelper://')) {
+      if (url.startsWith('capcutmaker://')) {
         // 在这里处理URL参数
         console.log('Protocol URL:', url);
         // 可以将URL参数发送到渲染进程
@@ -147,7 +147,7 @@ if (!gotTheLock) {
   // 协议处理 - macOS
   app.on('open-url', (event, url) => {
     event.preventDefault();
-    if (url.startsWith('capcuthelper://')) {
+    if (url.startsWith('capcutmaker://')) {
       console.log('Protocol URL (macOS):', url);
       if (mainWindow && mainWindow.webContents) {
         mainWindow.webContents.send('protocol-url', url);
@@ -170,4 +170,4 @@ if (!gotTheLock) {
 }
 
 // 在macOS上，需要在app.setAsDefaultProtocolClient之前调用这个
-app.setAsDefaultProtocolClient('capcuthelper');
+app.setAsDefaultProtocolClient('capcutmaker');
