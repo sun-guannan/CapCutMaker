@@ -1,6 +1,6 @@
 {
   "name": "capcutmaker",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {
