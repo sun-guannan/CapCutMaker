@@ -6,8 +6,8 @@ on:
       - main
       
 jobs:
-  # 创建版本标签
-  create-tag:
+  # 创建版本发布
+  create-release:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v')
     permissions:
@@ -21,7 +21,7 @@ jobs:
         id: package-version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
       
-      - name: Create Tag
+      - name: Create Tag and Release 
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GH_TOKEN }}
@@ -47,6 +47,18 @@ jobs:
                 sha: sha
               })
               console.log(`Created tag ${tagName} at ${sha}`)
+              
+              // 创建GitHub Release
+              await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tagName,
+                name: `Release ${tagName}`,
+                body: `Release version ${version}`,
+                draft: false,
+                prerelease: false
+              })
+              console.log(`Created release for ${tagName}`)
             }
   
   # 构建和发布应用
