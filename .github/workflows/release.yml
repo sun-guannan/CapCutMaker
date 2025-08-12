@@ -113,7 +113,7 @@ jobs:
   
   # 发布到GitHub Packages
   publish-package:
-    needs: [create-release, release]  # 添加对release任务的依赖
+    needs: [create-release, release]
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -129,20 +129,22 @@ jobs:
         with:
           node-version: '24.x'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@sunguannan'
+          scope: '@sun-guannan'
           cache: 'yarn'
       
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       
-      - name: Configure npm registry
+      - name: Create .npmrc file
         run: |
-          echo "@sunguannan:registry=https://npm.pkg.github.com/" > .npmrc
+          echo "@sun-guannan:registry=https://npm.pkg.github.com/" > .npmrc
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_TOKEN }}" >> .npmrc
       
       - name: Configure package for GitHub Packages
         run: |
-          node -e "const pkg=require('./package.json'); pkg.name='@sunguannan/CapCutMaker'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
+          # 确保包名与仓库名完全匹配（包括大小写）
+          node -e "const pkg=require('./package.json'); pkg.name='@sun-guannan/CapCutMaker'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
+      
       - name: Publish to GitHub Packages
         run: npm publish --access=public
         env:

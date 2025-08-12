@@ -1,6 +1,6 @@
 {
-  "name": "capcutmaker",
-  "version": "0.1.4",
+  "name": "@sun-guannan/CapCutMaker",
+  "version": "0.1.6",
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {
@@ -41,7 +41,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "sunguannan",
+        "owner": "sun-guannan",
         "repo": "CapCutMaker"
       }
     ]
