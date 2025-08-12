@@ -1,6 +1,6 @@
 {
   "name": "@sun-guannan/capcutmaker",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {
@@ -31,6 +31,9 @@
       "publish": [
         "github"
       ]
+    },
+    "linux": {
+      "target": []
     },
     "win": {
       "target": "nsis",
