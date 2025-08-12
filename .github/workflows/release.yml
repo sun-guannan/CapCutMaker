@@ -48,6 +48,7 @@ jobs:
                 sha: sha
               })
               console.log(`Created tag ${tagName} at ${sha}`)
+            }
   
   # 构建和发布应用
   release:
