@@ -1,6 +1,6 @@
 {
   "name": "@sun-guannan/capcutmaker",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {

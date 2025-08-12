@@ -84,6 +84,8 @@ jobs:
           yarn build:win
         fi
       shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
     - name: Upload Release Assets
       uses: softprops/action-gh-release@v1
