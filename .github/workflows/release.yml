@@ -107,8 +107,6 @@ jobs:
           dist/*universal.dmg
           dist/latest*.yml
         tag_name: ${{ github.ref }}
-        # 告诉 action 如果 Release 已存在，就更新它
-        on_existing_tag: overwrite
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
   
