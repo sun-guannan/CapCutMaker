@@ -35,7 +35,7 @@ jobs:
               await github.rest.git.getRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                ref: `${tagName}`
+                ref: `refs/tags/${tagName}`
               })
               console.log(`Tag ${tagName} already exists.`)
             } catch (error) {
@@ -43,7 +43,7 @@ jobs:
               await github.rest.git.createRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                ref: `${tagName}`,
+                ref: `refs/tags/${tagName}`,
                 sha: sha
               })
               console.log(`Created tag ${tagName} at ${sha}`)
@@ -52,7 +52,7 @@ jobs:
   # 任务2：并行构建，并上传构建产物（artifacts）
   build-and-upload:
     runs-on: ${{ matrix.os }}
-    if: startsWith(github.ref, '')
+    if: startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write
     strategy:
@@ -93,7 +93,7 @@ jobs:
   # 任务3：在所有构建任务成功后，统一创建 Release 并上传所有附件
   release-after-build:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, '')
+    if: startsWith(github.ref, 'refs/tags/')
     # 这个任务依赖于所有的构建任务
     needs: build-and-upload
     permissions:
@@ -117,7 +117,7 @@ jobs:
             macos-latest-build-artifacts/*.dmg
             windows-latest-build-artifacts/*.exe
           tag_name: ${{ github.ref }}
-          name: ${{ github.ref }}
+          name: ${{ github.ref_name }}
           draft: false
           prerelease: false
         env:
@@ -126,7 +126,7 @@ jobs:
   # # 发布到GitHub Packages
   # publish-package:
   #   needs: [create-release, release]
-  #   if: startsWith(github.ref, 'v') || github.ref == 'refs/heads/main'
+  #   if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
   #   runs-on: ubuntu-latest
   #   permissions:
   #     contents: read
@@ -165,7 +165,7 @@ jobs:
   # # 上传自动更新文件到 GitHub Releases
   # publish-update-files:
   #   needs: [create-release, release]
-  #   if: startsWith(github.ref, 'v') || github.ref == 'refs/heads/main'
+  #   if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
   #   runs-on: ubuntu-latest
   #   permissions:
   #     contents: write
