@@ -100,7 +100,7 @@ jobs:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
     - name: Upload Release Assets
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: |
           dist/*.exe
@@ -186,7 +186,7 @@ jobs:
   #           dist/latest*.yaml
       
   #     - name: Upload update files to release
-  #       uses: softprops/action-gh-release@v1
+  #       uses: softprops/action-gh-release@v2
   #       with:
   #         tag_name: v${{ steps.package-version.outputs.version }}
   #         files: |
