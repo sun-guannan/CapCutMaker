@@ -4,12 +4,13 @@ on:
   push:
     branches:
       - main
-      
+    tags:
+      - 'v*'
 jobs:
-  # 创建版本发布
+  # 任务1：创建版本发布。只在 main 分支 push 时运行。
   create-release:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
@@ -64,7 +65,8 @@ jobs:
   # 构建和发布应用
   release:
     needs: create-release
-    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
+    # 确保此任务只在 tag 被推送到仓库时运行
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -90,24 +92,19 @@ jobs:
     - name: Build and publish application
       run: |
         if [ "${{ matrix.os }}" == "macos-latest" ]; then
-          yarn build:mac --universal --publish always
+          yarn build:mac --universal
         else
-          yarn build:win --publish always
+          yarn build:win
         fi
       shell: bash
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
-    - name: Create GitHub Release
-      if: startsWith(github.ref, 'refs/tags/v')
+    - name: Upload Release Assets
       uses: softprops/action-gh-release@v1
       with:
         files: |
           dist/*.exe
           dist/*universal.dmg
           dist/latest*.yml
-        draft: false
-        prerelease: false
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
   
