@@ -80,6 +80,8 @@ jobs:
           yarn build:win
         fi
       shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
     # 这一步是关键！上传构建产物，而不是直接发布到 Release
     - name: Upload Artifacts
