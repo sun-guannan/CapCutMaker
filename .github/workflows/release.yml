@@ -54,7 +54,6 @@ jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.os }}
-    needs: create-tag
     permissions:
       contents: write
     strategy:
