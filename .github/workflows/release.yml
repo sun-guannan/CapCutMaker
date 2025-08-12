@@ -7,8 +7,8 @@ on:
     tags:
       - 'v*'
 jobs:
-  # 任务1：创建版本发布。只在 main 分支 push 时运行。
-  create-release-and-tag:
+  # 任务1：只创建 Tag。只在 main 分支 push 时运行。
+  create-tag:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     permissions:
@@ -22,7 +22,7 @@ jobs:
         id: package-version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
       
-      - name: Create Tag and Release
+      - name: Create Tag
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GH_TOKEN }}
@@ -48,25 +48,13 @@ jobs:
                 sha: sha
               })
               console.log(`Created tag ${tagName} at ${sha}`)
-
-              // 接着创建 GitHub Release
-              await github.rest.repos.createRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: tagName,
-                name: `Release ${tagName}`,
-                body: `Release version ${version}`,
-                draft: false,
-                prerelease: false
-              })
-              console.log(`Created release for ${tagName}`)
             }
   
-  # 构建和发布应用
+  # 任务2：构建和发布应用。只在 tag 被推送到仓库时运行。
   release:
-    # `needs` 仍然可以移除，因为它们是两个独立的工作流
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.os }}
+    needs: create-tag
     permissions:
       contents: write
     strategy:
@@ -99,14 +87,18 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
-    - name: Upload Release Assets
+    - name: Create or Update Release and Upload Assets
       uses: softprops/action-gh-release@v2
       with:
         files: |
           dist/*.exe
           dist/*universal.dmg
           dist/latest*.yml
+        # `tag_name` 参数是必须的，它会告诉 action 使用哪个 tag
         tag_name: ${{ github.ref }}
+        name: ${{ github.ref }}
+        draft: false
+        prerelease: false
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
   
