@@ -63,7 +63,7 @@ jobs:
   
   # 构建和发布应用
   release:
-    needs: create-tag
+    needs: create-release
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
     runs-on: ${{ matrix.os }}
     permissions:
@@ -113,7 +113,7 @@ jobs:
   
   # 发布到GitHub Packages
   publish-package:
-    needs: [create-tag, release]  # 添加对release任务的依赖
+    needs: [create-release, release]  # 添加对release任务的依赖
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
