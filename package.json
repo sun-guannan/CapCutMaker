@@ -1,6 +1,6 @@
 {
   "name": "@sun-guannan/capcutmaker",
-  "version": "0.1.29",
+  "version": "0.1.30",
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {
@@ -21,12 +21,16 @@
     },
     "mac": {
       "category": "public.app-category.utilities",
-      "target": {
-        "target": "dmg",
-        "arch": [
-          "universal"
-        ]
-      }
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["universal"]
+        },
+        {
+          "target": "zip",
+          "arch": ["universal"]
+        }
+      ]
     },
     "linux": {
       "target": []

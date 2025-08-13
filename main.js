@@ -31,7 +31,7 @@ let mainWindow;
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'info';
 
-// 配置正确的Windows安装包文件名格式
+// 配置正确的更新包文件名格式
 autoUpdater.configOnLoad = true;
 autoUpdater.setFeedURL({
   provider: 'github',
@@ -39,6 +39,11 @@ autoUpdater.setFeedURL({
   repo: 'CapCutMaker',
   updaterCacheDirName: 'capcutmaker-updater'
 });
+
+// 为Mac指定使用zip格式
+if (process.platform === 'darwin') {
+  autoUpdater.forceDevUpdateConfig = true;
+}
 
 // 自动更新事件监听
 autoUpdater.on('checking-for-update', () => {
