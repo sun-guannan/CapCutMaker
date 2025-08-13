@@ -115,6 +115,7 @@ jobs:
         with:
           files: |
             macos-latest-build-artifacts/*.dmg
+            macos-latest-build-artifacts/*.zip
             windows-latest-build-artifacts/*.exe            
             macos-latest-build-artifacts/latest*.yml
             windows-latest-build-artifacts/latest*.yml
