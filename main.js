@@ -31,6 +31,15 @@ let mainWindow;
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'info';
 
+// 配置正确的Windows安装包文件名格式
+autoUpdater.configOnLoad = true;
+autoUpdater.setFeedURL({
+  provider: 'github',
+  owner: 'sun-guannan',
+  repo: 'CapCutMaker',
+  updaterCacheDirName: 'capcutmaker-updater'
+});
+
 // 自动更新事件监听
 autoUpdater.on('checking-for-update', () => {
   sendStatusToWindow('正在检查更新...');
