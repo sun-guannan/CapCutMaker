@@ -115,7 +115,9 @@ jobs:
         with:
           files: |
             macos-latest-build-artifacts/*.dmg
-            windows-latest-build-artifacts/*.exe
+            windows-latest-build-artifacts/*.exe            
+            macos-latest-build-artifacts/latest*.yml
+            windows-latest-build-artifacts/latest*.yml
           tag_name: ${{ github.ref }}
           name: ${{ github.ref_name }}
           draft: false
