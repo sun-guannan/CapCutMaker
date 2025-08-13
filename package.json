@@ -1,6 +1,6 @@
 {
   "name": "@sun-guannan/capcutmaker",
-  "version": "0.1.31",
+  "version": "0.1.32",
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {
@@ -36,8 +36,9 @@
       "target": []
     },
     "win": {
-      "target": "nsis"
-      }
+      "target": "nsis",
+      "artifactName": "${productName}-Setup-${version}.exe"
+    }
   },
   "keywords": [
     "capcutmaker",
