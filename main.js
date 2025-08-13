@@ -116,6 +116,16 @@ function createWindow() {
   
   // 检查更新
   autoUpdater.checkForUpdatesAndNotify();
+  
+  // 处理冷启动时的协议URL
+  const args = process.argv;
+  const protocolUrl = args.find(arg => arg.startsWith('capcutmaker://'));
+  if (protocolUrl && mainWindow.webContents) {
+    console.log('Cold start protocol URL:', protocolUrl);
+    mainWindow.webContents.on('did-finish-load', () => {
+      mainWindow.webContents.send('protocol-url', protocolUrl);
+    });
+  }
 }
 
 // 注册自定义协议
