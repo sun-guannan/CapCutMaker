@@ -4,6 +4,12 @@ const url = require('url');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 
+// 添加electron-reload以支持热重载
+require('electron-reload')(__dirname, {
+  electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
+  hardResetMethod: 'exit'
+});
+
 // 读取package.json获取版本号
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 const appVersion = packageJson.version;
@@ -107,7 +113,7 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 
   // 打开开发者工具
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   // 当window被关闭，这个事件会被触发
   mainWindow.on('closed', function () {
@@ -195,3 +201,77 @@ if (!gotTheLock) {
 
 // 在macOS上，需要在app.setAsDefaultProtocolClient之前调用这个
 app.setAsDefaultProtocolClient('capcutmaker');
+
+// 添加IPC监听器来处理从渲染进程发送的参数
+// 在文件顶部添加 electron-store 引入
+const Store = require('electron-store');
+const store = new Store();
+
+ipcMain.handle('get-draft-folder', () => {
+  return store.get('draftFolder');
+});
+
+ipcMain.on('process-parameters', async (event, params) => {
+  console.log('从渲染进程接收到参数:', params);
+  
+  // 获取draft_id、draft_folder和is_capcut参数
+  const { draft_id, draft_folder, is_capcut } = params;
+  
+  if (!draft_id) {
+    event.reply('process-result', { success: false, message: '缺少草稿ID' });
+    return;
+  }
+  
+  try {
+    // 导入saveDraftBackground模块
+    const { saveDraftBackground } = require('./util/saveDraftBackground');
+    
+    // 设置环境变量（如果需要）
+    global.IS_CAPCUT_ENV = is_capcut === '1';
+    
+    // 生成任务ID
+    const taskId = `task_${Date.now()}`;
+    
+    // 设置草稿文件夹路径，如果提供了新路径则保存到 store 中
+    if (draft_folder) {
+      store.set('draftFolder', draft_folder);
+    }
+    
+    // 从 store 中获取保存的路径，如果没有则使用默认路径
+    const draftFolder = store.get('draftFolder') || path.join(__dirname, 'drafts');
+    
+    // 确保草稿文件夹存在
+    if (!fs.existsSync(draftFolder)) {
+      fs.mkdirSync(draftFolder, { recursive: true });
+    }
+    
+    // 通知渲染进程任务已开始
+    event.reply('process-result', { 
+      success: true, 
+      message: `开始处理草稿 ${draft_id}，任务ID: ${taskId}` 
+    });
+    
+    // 调用saveDraftBackground函数
+    const draftUrl = await saveDraftBackground(draft_id, draftFolder, taskId);
+    
+    // // 通知渲染进程任务完成
+    // if (draftUrl) {
+    //   event.reply('process-result', { 
+    //     success: true, 
+    //     message: `草稿处理完成，URL: ${draftUrl}`,
+    //     draft_url: draftUrl
+    //   });
+    // } else {
+    //   event.reply('process-result', { 
+    //     success: false, 
+    //     message: '草稿处理失败，请查看日志' 
+    //   });
+    // }
+  } catch (error) {
+    console.error('处理草稿时出错:', error);
+    event.reply('process-result', { 
+      success: false, 
+      message: `处理草稿时出错: ${error.message}` 
+    });
+  }
+});
