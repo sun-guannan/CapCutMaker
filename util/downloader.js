@@ -12,7 +12,7 @@ const { promisify } = require('util');
  * @returns {Promise<string>} - 本地视频路径
  */
 async function downloadVideo(videoUrl, draftName, materialName) {
-    // 确保目录存在
+    // 确保目录存在 
     const videoDir = `${draftName}/assets/video`;
     await fs.promises.mkdir(videoDir, { recursive: true });
     
