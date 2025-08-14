@@ -129,6 +129,12 @@
     button:hover {
       background-color: #0b7dda;
     }
+    
+    /* 添加loading动画 */
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -143,6 +149,14 @@
       
       <div id="protocol-data" class="protocol-data">
         <p>协议数据将显示在这里...</p>
+      </div>
+      
+      <!-- 添加下载状态显示区域 -->
+      <div id="download-status" class="protocol-data" style="display: none; background-color: #e1f5fe;">
+        <p id="download-message">下载状态将显示在这里...</p>
+        <div id="loading-indicator" style="text-align: center; margin-top: 10px;">
+          <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid #2196F3; border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite;"></div>
+        </div>
       </div>
       
       <div class="manual-input">
@@ -232,6 +246,27 @@
         <p><strong>更新状态:</strong></p>
         <p>${text}</p>
       `;
+    });
+    
+    // 监听下载状态
+    ipcRenderer.on('download-status', (event, data) => {
+      console.log('Download status:', data);
+      const statusElement = document.getElementById('download-status');
+      const messageElement = document.getElementById('download-message');
+      const loadingIndicator = document.getElementById('loading-indicator');
+      
+      statusElement.style.display = 'block';
+      messageElement.textContent = data.message;
+      
+      if (data.status === 'loading') {
+        loadingIndicator.style.display = 'block';
+      } else if (data.status === 'completed') {
+        loadingIndicator.style.display = 'none';
+        // 3秒后隐藏状态显示
+        setTimeout(() => {
+          statusElement.style.display = 'none';
+        }, 3000);
+      }
     });
     
     // 解析URL参数的函数

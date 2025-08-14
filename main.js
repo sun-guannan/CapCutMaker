@@ -251,8 +251,20 @@ ipcMain.on('process-parameters', async (event, params) => {
       message: `开始处理草稿 ${draft_id}，任务ID: ${taskId}` 
     });
     
+    // 发送下载中的loading状态
+    event.reply('download-status', {
+      status: 'loading',
+      message: '正在下载草稿文件，请稍候...' 
+    });
+    
     // 调用saveDraftBackground函数
     const draftUrl = await saveDraftBackground(draft_id, draftFolder, taskId);
+    
+    // 下载完成，发送完成状态
+    event.reply('download-status', {
+      status: 'completed',
+      message: '下载完成！'
+    });
     
     // // 通知渲染进程任务完成
     // if (draftUrl) {
