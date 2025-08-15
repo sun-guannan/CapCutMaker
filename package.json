@@ -1,6 +1,6 @@
 {
   "name": "@sun-guannan/capcutmaker",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {
@@ -14,8 +14,8 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "build": {
-    "appId": "com.capcutmaker.app",
-    "productName": "CapCutMaker",
+    "appId": "com.capcutapi.app",
+    "productName": "CapCutAPI",
     "icon": "src/logo.png",
     "protocols": {
       "name": "capcutmaker",
