@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>CapCutMaker6</title>
+  <title id="page-title">CapCutAPI</title>
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
   <style>
     body {
@@ -46,20 +46,138 @@
       border-radius: 4px;
       color: #2980b9;
     }
+    .manual-input {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .toggle-container {
+      display: flex;
+      align-items: center;
+    }
+    .toggle-label {
+      margin-right: 10px;
+    }
+    .toggle-button {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 30px;
+    }
+    .toggle-button input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 30px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+      background-color: #2196F3;
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(30px);
+    }
+    .toggle-text {
+      margin-left: 10px;
+    }
+    button {
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #0b7dda;
+    }
+    
+    /* 添加loading动画 */
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>CapCutMaker</h1>
+    <h1 id="page-title">CapCutAPI</h1>
     <div class="version" id="version-info">加载中...</div>
     
     <div class="content">
       <p>这是一个可以通过网页链接启动的Electron应用程序。</p>
       <p>您可以使用以下协议链接来启动此应用：</p>
-      <code>capcutmaker://action?param=value</code>
+      <code>capcutmaker://action?draft_id=123&is_capcut=1</code>
       
       <div id="protocol-data" class="protocol-data">
         <p>协议数据将显示在这里...</p>
+      </div>
+      
+      <!-- 添加下载状态显示区域 -->
+      <div id="download-status" class="protocol-data" style="display: none; background-color: #e1f5fe;">
+        <p id="download-message">下载状态将显示在这里...</p>
+        <div id="loading-indicator" style="text-align: center; margin-top: 10px;">
+          <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid #2196F3; border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite;"></div>
+        </div>
+      </div>
+      
+      <div class="manual-input">
+        <h3>手动输入参数</h3>
+        <div class="form-group">
+          <label for="draft-id">草稿ID (draft_id):</label>
+          <input type="text" id="draft-id" placeholder="请输入草稿ID">
+        </div>
+        <div class="form-group">
+          <label for="draft-folder">草稿保存路径 (draftFolder):</label>
+          <input type="text" id="draft-folder" placeholder="请输入草稿保存路径，留空则使用默认路径">
+        </div>
+        <div class="form-group toggle-container">
+          <span class="toggle-label">应用类型:</span>
+          <label class="toggle-button">
+            <input type="checkbox" id="app-type-toggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-text" id="app-type-text">CapCut</span>
+        </div>
+        <button id="process-button">下载</button>
       </div>
       
       <div id="update-message" class="update-message">
@@ -93,15 +211,38 @@
     const { appVersion, versionCode } = getVersionInfo();
     document.getElementById('version-info').textContent = `版本 ${appVersion} (版本码: ${versionCode})`;
     
+    // 使用i18next设置页面标题
+    ipcRenderer.invoke('get-translation', 'title').then(translation => {
+      document.getElementById('page-title').textContent = translation;
+      document.title = translation;
+    });
+    
     // 监听来自主进程的协议URL消息
     ipcRenderer.on('protocol-url', (event, url) => {
       console.log('Received protocol URL:', url);
+      const parsedData = parseUrlParams(url);
       document.getElementById('protocol-data').innerHTML = `
         <p><strong>收到的协议URL:</strong></p>
         <p>${url}</p>
         <p><strong>解析后的参数:</strong></p>
-        <pre>${parseUrlParams(url)}</pre>
+        <pre>${JSON.stringify(parsedData, null, 2)}</pre>
       `;
+      
+      // 如果URL中包含draft_id和is_capcut参数，自动填充到表单中
+      if (parsedData.params && parsedData.params.draft_id) {
+        document.getElementById('draft-id').value = parsedData.params.draft_id;
+      }
+      
+      if (parsedData.params && parsedData.params.is_capcut !== undefined) {
+        const isCapcut = parsedData.params.is_capcut === '1';
+        document.getElementById('app-type-toggle').checked = isCapcut;
+        updateAppTypeText();
+      }
+      
+      // 如果有参数，自动处理
+      if (parsedData.params && parsedData.params.draft_id) {
+        processParameters();
+      }
     });
     
     // 监听来自主进程的更新消息
@@ -111,6 +252,27 @@
         <p><strong>更新状态:</strong></p>
         <p>${text}</p>
       `;
+    });
+    
+    // 监听下载状态
+    ipcRenderer.on('download-status', (event, data) => {
+      console.log('Download status:', data);
+      const statusElement = document.getElementById('download-status');
+      const messageElement = document.getElementById('download-message');
+      const loadingIndicator = document.getElementById('loading-indicator');
+      
+      statusElement.style.display = 'block';
+      messageElement.textContent = data.message;
+      
+      if (data.status === 'loading') {
+        loadingIndicator.style.display = 'block';
+      } else if (data.status === 'completed') {
+        loadingIndicator.style.display = 'none';
+        // 3秒后隐藏状态显示
+        setTimeout(() => {
+          statusElement.style.display = 'none';
+        }, 3000);
+      }
     });
     
     // 解析URL参数的函数
@@ -135,11 +297,67 @@
           });
         }
         
-        return JSON.stringify(result, null, 2);
+        return result;
       } catch (error) {
-        return `解析错误: ${error.message}`;
+        return { error: error.message };
       }
     }
+    
+    // 更新应用类型文本
+    function updateAppTypeText() {
+      const isCapcut = document.getElementById('app-type-toggle').checked;
+      document.getElementById('app-type-text').textContent = isCapcut ? 'CapCut' : '剪映';
+    }
+    
+    // 处理参数
+    function processParameters() {
+      const draftId = document.getElementById('draft-id').value;
+      const draftFolder = document.getElementById('draft-folder').value;
+      const isCapcut = document.getElementById('app-type-toggle').checked;
+      
+      if (!draftId) {
+        alert('请输入草稿ID');
+        return;
+      }
+      
+      const params = {
+        draft_id: draftId,
+        draft_folder: draftFolder,
+        is_capcut: isCapcut ? '1' : '0'
+      };
+      
+      console.log('处理参数:', params);
+      
+      // 这里可以添加实际处理逻辑，例如发送到主进程
+      ipcRenderer.send('process-parameters', params);
+      
+      // 显示处理信息
+      document.getElementById('protocol-data').innerHTML = `
+        <p><strong>正在处理以下参数:</strong></p>
+        <pre>${JSON.stringify(params, null, 2)}</pre>
+      `;
+    }
+    
+    // 在 DOMContentLoaded 事件处理函数中添加以下代码
+    document.addEventListener('DOMContentLoaded', () => {
+      // 从主进程获取保存的 draftFolder 值
+      ipcRenderer.invoke('get-draft-folder').then(savedDraftFolder => {
+        if (savedDraftFolder) {
+          document.getElementById('draft-folder').value = savedDraftFolder;
+        }
+      });
+      
+      // 切换按钮事件
+      const toggleButton = document.getElementById('app-type-toggle');
+      toggleButton.addEventListener('change', updateAppTypeText);
+      
+      // 处理按钮事件
+      const processButton = document.getElementById('process-button');
+      processButton.addEventListener('click', processParameters);
+      
+      // 初始化应用类型文本
+      updateAppTypeText();
+    });
   </script>
 </body>
 </html>

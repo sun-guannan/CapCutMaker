@@ -4,6 +4,45 @@ const url = require('url');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 
+// 添加 i18next 相关依赖
+const i18next = require('i18next');
+const Backend = require('i18next-fs-backend');
+
+// 初始化 i18next
+let i18n;
+
+function initI18n() {
+  const isDev = process.env.NODE_ENV === 'development';
+  const localesPath = isDev 
+    ? path.join(__dirname, 'locales') 
+    : path.join(process.resourcesPath, 'locales');
+
+  i18n = i18next.use(Backend).init({
+    backend: {
+      loadPath: path.join(localesPath, '{{lng}}/{{ns}}.json')
+    },
+    fallbackLng: 'en',
+    debug: isDev,
+    interpolation: {
+      escapeValue: false
+    }
+  });
+
+  return i18n;
+}
+
+// 在应用启动时初始化 i18n
+app.whenReady().then(() => {
+  initI18n();
+  createWindow();
+});
+
+// 添加electron-reload以支持热重载
+require('electron-reload')(__dirname, {
+  electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
+  hardResetMethod: 'exit'
+});
+
 // 读取package.json获取版本号
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 const appVersion = packageJson.version;
@@ -91,11 +130,22 @@ function sendStatusToWindow(text) {
   }
 }
 
+// 添加检查更新的IPC监听器
+ipcMain.on('check-for-updates', () => {
+  autoUpdater.checkForUpdates();
+});
+
+// 添加重启并安装更新的IPC监听器
+ipcMain.on('restart-and-update', () => {
+  autoUpdater.quitAndInstall();
+});
+
 function createWindow() {
   // 创建浏览器窗口
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    icon: path.join(__dirname, 'src/logo.png'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -103,11 +153,15 @@ function createWindow() {
     }
   });
 
-  // 加载index.html文件
-  mainWindow.loadFile('index.html');
+  // 加载打包后的index.html文件
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.loadFile('public/index.html');
+  } else {
+    mainWindow.loadFile('dist/index.html');
+  }
 
   // 打开开发者工具
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   // 当window被关闭，这个事件会被触发
   mainWindow.on('closed', function () {
@@ -195,3 +249,137 @@ if (!gotTheLock) {
 
 // 在macOS上，需要在app.setAsDefaultProtocolClient之前调用这个
 app.setAsDefaultProtocolClient('capcutmaker');
+
+// 添加IPC监听器来处理从渲染进程发送的参数
+// 在文件顶部添加 electron-store 引入
+const Store = require('electron-store');
+const store = new Store();
+
+// 添加保存设置的IPC监听器
+ipcMain.on('save-settings', (event, settings) => {
+  console.log('保存设置:', settings);
+  if (settings.draftFolder) {
+    store.set('draftFolder', settings.draftFolder);
+  }
+  if (settings.isCapcut !== undefined) {
+    store.set('isCapcut', settings.isCapcut);
+  }
+});
+
+// 修改获取设置的IPC处理函数
+ipcMain.handle('get-draft-folder', () => {
+  const draftFolder = store.get('draftFolder', ''); // 默认为空字符串
+  const isCapcut = store.get('isCapcut', true); // 默认为true
+  
+  return {
+    draftFolder: draftFolder,
+    isCapcut: isCapcut
+  };
+});
+
+ipcMain.on('process-parameters', async (event, params) => {
+  console.log('从渲染进程接收到参数:', params);
+  
+  // 获取draft_id、draft_folder和is_capcut参数
+  const { draft_id, draft_folder, is_capcut } = params;
+  
+  if (!draft_id) {
+    event.reply('process-result', { success: false, message: i18next.t('missing_draft_id') });
+    return;
+  }
+  
+  try {
+    // 导入saveDraftBackground模块
+    const { saveDraftBackground } = require('./util/saveDraftBackground');
+    
+    // 设置环境变量（如果需要）
+    global.IS_CAPCUT_ENV = is_capcut === '1';
+    
+    // 生成任务ID
+    const taskId = `task_${Date.now()}`;
+    
+    // 设置草稿文件夹路径，如果提供了新路径则保存到 store 中
+    if (draft_folder) {
+      store.set('draftFolder', draft_folder);
+    }
+    
+    // 从 store 中获取保存的路径，如果没有则使用默认路径
+    const draftFolder = store.get('draftFolder') || path.join(__dirname, 'drafts');
+    
+    // 确保草稿文件夹存在
+    if (!fs.existsSync(draftFolder)) {
+      fs.mkdirSync(draftFolder, { recursive: true });
+    }
+    
+    // 通知渲染进程任务已开始
+    event.reply('process-result', { 
+      success: true, 
+      message: i18next.t('start_processing', { draft_id, task_id: taskId })
+    });
+    
+    // 发送下载中的loading状态
+    event.reply('download-status', {
+      status: 'loading',
+      message: i18next.t('downloading_please_wait')
+    });
+    
+    // 定义进度回调函数
+    const progressCallback = (progress, text) => {
+      if (progress < 0) {
+        // 错误情况
+        event.reply('download-error', text);
+      } else {
+        // 正常进度更新
+        event.reply('download-progress', { progress, text });
+      }
+    };
+    
+    // 调用saveDraftBackground函数，传入进度回调
+    const result = await saveDraftBackground(draft_id, draftFolder, taskId, progressCallback);
+    
+    if (result.success) {
+      // 下载完成，发送完成状态
+      event.reply('download-status', {
+        status: 'completed',
+        message: result.message || i18next.t('download_complete')
+      });
+
+    } else {
+      // 下载失败，发送错误状态
+      event.reply('download-status', {
+        status: 'error',
+        message: result.message || i18next.t('download_failed')
+      });
+      
+      // 发送详细错误信息
+      event.reply('download-error', result.error || i18next.t('processing_failed', { error: '未知错误' }));
+    }
+  } catch (error) {
+    console.error('处理草稿时出错:', error);
+    event.reply('process-result', { 
+      success: false, 
+      message: i18next.t('processing_failed', { error: error.message })
+    });
+    
+    // 发送下载错误状态
+    event.reply('download-status', {
+      status: 'error',
+      message: i18next.t('download_failed')
+    });
+    
+    // 发送详细错误信息
+    event.reply('download-error', error.message);
+  }
+});
+
+// 确保翻译文件在打包后可用
+if (app.isPackaged) {
+  process.env.LOCALES_PATH = path.join(process.resourcesPath, 'locales');
+} else {
+  process.env.LOCALES_PATH = path.join(__dirname, 'locales');
+}
+
+// 添加 IPC 处理程序来获取翻译
+ipcMain.handle('get-translation', (event, key) => {
+  return i18next.t(key);
+});
