@@ -123,9 +123,11 @@ async function saveDraftBackground(draftId, draftFolder, taskId) {
     if (audios && audios.length > 0) {
       for (const audio of audios) {
         const remoteUrl = audio.remote_url;
-        const materialName = audio.material_name;
+        debugger;
+        const materialName = audio.name;
         // 使用辅助函数构建路径
         if (draftFolder) {
+            logger.info(`音频文件 ${materialName} 路径`);
           audio.path = buildAssetPath(draftFolder, draftId, "audio", materialName);
         }
         if (!remoteUrl) {
@@ -214,11 +216,9 @@ async function saveDraftBackground(draftId, draftFolder, taskId) {
               
               // 更新任务状态 - 只更新已完成文件数
               completedFiles += 1;
-              const taskStatus = await getTaskStatus(taskId);
-              const completed = taskStatus.completed_files;
               const total = downloadTasks.length;
               
-              logger.info(`任务 ${taskId}：成功下载 ${task.type} 文件，进度 ${downloadProgress}。`);
+              logger.info(`任务 ${taskId}：成功下载 ${task.type} 文件。`);
               return localPath;
             } catch (error) {
               logger.error(`任务 ${taskId}：下载 ${task.type} 文件失败:`, error);
@@ -256,10 +256,11 @@ async function saveDraftBackground(draftId, draftFolder, taskId) {
         metaInfo = JSON.parse(metaInfoData);
       }
       
-      // 更新时间戳（毫秒级别）
-      const currentTimestamp = Date.now() * 1000 + Math.floor(Math.random() * 1000);
-      metaInfo.tm_draft_create = currentTimestamp;
-      metaInfo.tm_draft_modified = currentTimestamp;
+      // 更新时间戳
+      const currentMillisTimestamp = Date.now(); // 毫秒级时间戳
+      const currentMicrosTimestamp = currentMillisTimestamp * 1000 + Math.floor(Math.random() * 1000); // 微秒级时间戳
+      metaInfo.tm_draft_create = currentMillisTimestamp;
+      metaInfo.tm_draft_modified = currentMicrosTimestamp;
       
       // 保存更新后的文件
       await fs.promises.writeFile(

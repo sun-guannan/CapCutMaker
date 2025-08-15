@@ -97,11 +97,22 @@ function sendStatusToWindow(text) {
   }
 }
 
+// 添加检查更新的IPC监听器
+ipcMain.on('check-for-updates', () => {
+  autoUpdater.checkForUpdates();
+});
+
+// 添加重启并安装更新的IPC监听器
+ipcMain.on('restart-and-update', () => {
+  autoUpdater.quitAndInstall();
+});
+
 function createWindow() {
   // 创建浏览器窗口
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    icon: path.join(__dirname, 'src/logo.png'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -109,8 +120,12 @@ function createWindow() {
     }
   });
 
-  // 加载index.html文件
-  mainWindow.loadFile('index.html');
+  // 加载打包后的index.html文件
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.loadFile('public/index.html');
+  } else {
+    mainWindow.loadFile('dist/index.html');
+  }
 
   // 打开开发者工具
   mainWindow.webContents.openDevTools();
@@ -207,8 +222,26 @@ app.setAsDefaultProtocolClient('capcutmaker');
 const Store = require('electron-store');
 const store = new Store();
 
+// 添加保存设置的IPC监听器
+ipcMain.on('save-settings', (event, settings) => {
+  console.log('保存设置:', settings);
+  if (settings.draftFolder) {
+    store.set('draftFolder', settings.draftFolder);
+  }
+  if (settings.isCapcut !== undefined) {
+    store.set('isCapcut', settings.isCapcut);
+  }
+});
+
+// 修改获取设置的IPC处理函数
 ipcMain.handle('get-draft-folder', () => {
-  return store.get('draftFolder');
+  const draftFolder = store.get('draftFolder', ''); // 默认为空字符串
+  const isCapcut = store.get('isCapcut', true); // 默认为true
+  
+  return {
+    draftFolder: draftFolder,
+    isCapcut: isCapcut
+  };
 });
 
 ipcMain.on('process-parameters', async (event, params) => {
@@ -258,7 +291,7 @@ ipcMain.on('process-parameters', async (event, params) => {
     });
     
     // 调用saveDraftBackground函数
-    const draftUrl = await saveDraftBackground(draft_id, draftFolder, taskId);
+    await saveDraftBackground(draft_id, draftFolder, taskId);
     
     // 下载完成，发送完成状态
     event.reply('download-status', {
@@ -287,3 +320,10 @@ ipcMain.on('process-parameters', async (event, params) => {
     });
   }
 });
+
+// 确保翻译文件在打包后可用
+if (app.isPackaged) {
+  process.env.LOCALES_PATH = path.join(process.resourcesPath, 'locales');
+} else {
+  process.env.LOCALES_PATH = path.join(__dirname, 'locales');
+}

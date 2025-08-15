@@ -1,0 +1,23 @@
+{
+  "title": "CapCutMaker",
+  "version": "版本",
+  "draft_id_label": "草稿ID (draft_id):",
+  "draft_id_placeholder": "请输入草稿ID",
+  "draft_folder_label": "剪映草稿目录:",
+  "draft_folder_placeholder": "请输入草稿目录",
+  "app_type_label": "应用类型:",
+  "capcut": "CapCut",
+  "jianying": "剪映",
+  "download_button": "下载",
+  "preparing": "准备下载...",
+  "downloading": "正在下载...",
+  "download_complete": "下载完成！",
+  "check_update": "检查更新",
+  "input_required": "请填写必填字段",
+  "error_prefix": "错误: ",
+  "settings": "设置",
+  "save": "保存",
+  "cancel": "取消",
+  "settings_saved": "设置已保存",
+  "draft_folder_required": "请先设置草稿文件夹路径"
+}
