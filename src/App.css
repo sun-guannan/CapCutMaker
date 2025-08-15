@@ -24,8 +24,8 @@ body {
 }
 
 .app-logo {
-  width: 42px;  /* 从32px增加到40px */
-  height: 42px; /* 从32px增加到40px */
+  width: 48px;  /* 从32px增加到40px */
+  height: 48px; /* 从32px增加到40px */
   margin-right: 12px;
   border-radius: 50%; /* 使logo变成圆形 */
 }

@@ -3,9 +3,12 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { Worker } = require('worker_threads');
 const { promisify } = require('util');
-const axios = require('axios'); // 添加 axios 引入
+const axios = require('axios');
 const downloader = require('./downloader');
 const { log } = require('console');
+
+// 获取 i18next 实例
+const i18next = require('i18next');
 
 // 配置
 const IS_CAPCUT_ENV = true; // 根据实际情况设置
@@ -65,10 +68,16 @@ async function copyFolderRecursive(source, destination) {
  * @param {string} draftId - 草稿ID
  * @param {string} draftFolder - 草稿文件夹路径
  * @param {string} taskId - 任务ID
- * @returns {Promise<string>} - 草稿URL
+ * @param {Function} progressCallback - 进度回调函数
+ * @returns {Promise<Object>} - 返回结果对象 {success: boolean, error: string, message: string}
  */
-async function saveDraftBackground(draftId, draftFolder, taskId) {
+async function saveDraftBackground(draftId, draftFolder, taskId, progressCallback) {
   try {
+    // 初始化进度
+    if (progressCallback) {
+      progressCallback(5, i18next.t('getting_draft_info'));
+    }
+    
     // 1.从API获取草稿信息
     let script;
     try {
@@ -83,15 +92,21 @@ async function saveDraftBackground(draftId, draftFolder, taskId) {
         );
 
         if (response.data && response.data.success) {
-            debugger;
             script = JSON.parse(JSON.parse(JSON.stringify(response.data)).output);
             logger.info(`成功从API获取草稿 ${draftId}。`);
         } else {
-            throw new Error(`API返回数据格式不正确或请求失败: ${JSON.stringify(response.data)}`);
+            throw new Error(`${JSON.parse(JSON.stringify(response.data)).error}`);
         }
     } catch (error) {
       logger.error(`无法从API获取草稿 ${draftId}，任务 ${taskId} 失败。`, error);
-      return "";
+      if (progressCallback) {
+        progressCallback(-1, i18next.t('cannot_get_draft_info', { error: error.message }));
+      }
+      return { success: false, error: error.message, message: i18next.t('cannot_get_draft_info', { error: error.message }) };
+    }
+    
+    if (progressCallback) {
+      progressCallback(10, i18next.t('preparing_draft_files'));
     }
     
     logger.info(`任务 ${taskId} 状态更新为 'processing'：正在准备草稿文件。`);
@@ -114,20 +129,21 @@ async function saveDraftBackground(draftId, draftFolder, taskId) {
     await copyFolderRecursive(templatePath, draftPath);
     logger.info(`模板目录复制完成`);
     
+    if (progressCallback) {
+      progressCallback(20, i18next.t('collecting_download_tasks'));
+    }
+    
     // 收集下载任务
     const downloadTasks = [];
     
-    debugger;
     // 收集音频下载任务
     const audios = script.materials.audios;
     if (audios && audios.length > 0) {
       for (const audio of audios) {
         const remoteUrl = audio.remote_url;
-        debugger;
         const materialName = audio.name;
         // 使用辅助函数构建路径
         if (draftFolder) {
-            logger.info(`音频文件 ${materialName} 路径`);
           audio.path = buildAssetPath(draftFolder, draftId, "audio", materialName);
         }
         if (!remoteUrl) {
@@ -191,6 +207,9 @@ async function saveDraftBackground(draftId, draftFolder, taskId) {
     }
 
     logger.info(`任务 ${taskId} 进度10%：共收集到 ${downloadTasks.length} 个下载任务。`);
+    if (progressCallback) {
+      progressCallback(30, i18next.t('start_downloading', { count: downloadTasks.length }));
+    }
 
     // 并发执行所有下载任务
     const downloadedPaths = [];
@@ -214,15 +233,23 @@ async function saveDraftBackground(draftId, draftFolder, taskId) {
               const localPath = await task.func(...task.args);
               downloadedPaths.push(localPath);
               
-              // 更新任务状态 - 只更新已完成文件数
+              // 更新任务状态 - 更新已完成文件数和进度
               completedFiles += 1;
               const total = downloadTasks.length;
+              const downloadProgress = Math.floor(30 + (completedFiles / total) * 40); // 从30%到70%的进度
               
-              logger.info(`任务 ${taskId}：成功下载 ${task.type} 文件。`);
+              if (progressCallback) {
+                progressCallback(downloadProgress, `已下载 ${completedFiles}/${total} 个文件...`);
+              }
+              
+              logger.info(`任务 ${taskId}：成功下载 ${task.type} 文件。进度: ${completedFiles}/${total}`);
               return localPath;
             } catch (error) {
               logger.error(`任务 ${taskId}：下载 ${task.type} 文件失败:`, error);
               // 继续处理其他文件，不中断整个流程
+              if (progressCallback) {
+                progressCallback(-1, `下载文件失败: ${error.message}，继续处理其他文件...`);
+              }
               return null;
             }
           })();
@@ -235,6 +262,9 @@ async function saveDraftBackground(draftId, draftFolder, taskId) {
     }
     
     // 更新任务状态 - 开始保存草稿信息
+    if (progressCallback) {
+      progressCallback(70, i18next.t('saving_draft_info'));
+    }
     logger.info(`任务 ${taskId} 进度70%：正在保存草稿信息。`);
     
     // 保存草稿信息到JSON文件
@@ -269,18 +299,30 @@ async function saveDraftBackground(draftId, draftFolder, taskId) {
       );
       
       logger.info(`已更新 draft_meta_info.json 中的时间戳字段。`);
+      if (progressCallback) {
+        progressCallback(90, i18next.t('finalizing'));
+      }
     } catch (error) {
       logger.error(`更新 draft_meta_info.json 失败:`, error);
+      if (progressCallback) {
+        progressCallback(-1, i18next.t('update_meta_info_failed', { error: error.message }));
+      }
     }
 
     // 更新任务状态 - 完成
     logger.info(`任务 ${taskId} 已完成`);
-    return "";
+    if (progressCallback) {
+      progressCallback(100, '下载完成！');
+    }
+    return { success: true, message: '下载完成！' };
 
   } catch (error) {
     // 更新任务状态 - 失败
     logger.error(`保存草稿 ${draftId} 任务 ${taskId} 失败:`, error);
-    return "";
+    if (progressCallback) {
+      progressCallback(-1, i18next.t('processing_failed', { error: error.message }));
+    }
+    return { success: false, error: error.message, message: i18next.t('processing_failed', { error: error.message }) };
   }
 }
 

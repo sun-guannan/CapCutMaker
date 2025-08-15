@@ -4,7 +4,7 @@ import { CloudDownloadOutlined } from '@ant-design/icons';
 import zhCN from 'antd/locale/zh_CN';
 import enUS from 'antd/locale/en_US';
 import './App.css';
-import logo from './logo.png';
+import logo from './icon.png';
 import translateIcon from '../public/translate.png';
 import updateIcon from '../public/update.png'; // 导入更新图标
 import settingsIcon from '../public/settings.png'; // 导入设置图标
@@ -16,6 +16,34 @@ const { Title, Text } = Typography;
 
 // 引入electron的ipcRenderer模块
 const { ipcRenderer } = window.require('electron');
+
+// 解析URL参数的函数
+function parseUrlParams(protocolUrl) {
+  try {
+    // 移除协议前缀
+    const urlWithoutProtocol = protocolUrl.replace('capcutmaker://', '');
+    
+    // 分离路径和查询参数
+    const [path, queryString] = urlWithoutProtocol.split('?');
+    
+    const result = {
+      path: path,
+      params: {}
+    };
+    
+    // 解析查询参数
+    if (queryString) {
+      const params = new URLSearchParams(queryString);
+      params.forEach((value, key) => {
+        result.params[key] = value;
+      });
+    }
+    
+    return result;
+  } catch (error) {
+    return { error: error.message };
+  }
+}
 
 const App = () => {
   const { t, i18n } = useTranslation(); // 使用useTranslation hook
@@ -34,23 +62,15 @@ const App = () => {
   const [tempDraftFolder, setTempDraftFolder] = useState(''); // 临时存储设置对话框中的草稿文件夹路径
   const [tempIsCapcut, setTempIsCapcut] = useState(true); // 临时存储设置对话框中的应用类型
 
-  // 修改useEffect部分，确保正确处理返回的设置对象并自动弹出设置对话框
+  // 修改useEffect部分，移除对旧版本的兼容处理
   useEffect(() => {
     // 从主进程获取保存的设置值
     ipcRenderer.invoke('get-draft-folder').then(settings => {
-      let draftFolderValue = '';
-      
-      if (typeof settings === 'string') {
-        // 兼容旧版本，直接返回draftFolder字符串的情况
-        draftFolderValue = settings || '';
-        setDraftFolder(draftFolderValue);
-      } else if (settings && typeof settings === 'object') {
-        // 新版本返回对象的情况
-        draftFolderValue = settings.draftFolder || '';
-        setDraftFolder(draftFolderValue);
-        if (settings.isCapcut !== undefined) {
-          setIsCapcut(settings.isCapcut);
-        }
+      // 新版本返回对象的情况
+      const draftFolderValue = settings.draftFolder || '';
+      setDraftFolder(draftFolderValue);
+      if (settings.isCapcut !== undefined) {
+        setIsCapcut(settings.isCapcut);
       }
       
       // 如果draftFolder为空，自动弹出设置对话框
@@ -64,13 +84,18 @@ const App = () => {
       console.log('Received protocol URL:', url);
       const parsedData = parseUrlParams(url);
       
-      // 如果URL中包含draft_id和is_capcut参数，自动填充到表单中
+      // 如果URL中包含draft_id参数，自动填充到表单中并触发下载
       if (parsedData.params && parsedData.params.draft_id) {
         setDraftId(parsedData.params.draft_id);
-      }
-      
-      if (parsedData.params && parsedData.params.is_capcut !== undefined) {
-        setIsCapcut(parsedData.params.is_capcut === '1');
+        
+        // 如果是从协议URL跳转而来，自动触发下载
+        // 确保draftFolder已设置
+        if (draftFolder) {
+          // 延迟一点执行下载，确保状态已更新
+          setTimeout(() => {
+            handleDownload(parsedData.params.draft_id);
+          }, 100);
+        }
       }
     });
 
@@ -84,30 +109,38 @@ const App = () => {
     ipcRenderer.on('download-status', (event, data) => {
       if (data.status === 'completed') {
         setDownloading(false);
-        setProgress(100);
-        setProgressText(t('download_complete'));
-        setTimeout(() => {
-          setProgress(0);
-          setProgressText('');
-        }, 3000);
+        setProgress(0);
+        
+        // 使用 Ant Design 的 message 组件显示成功消息
+        message.success({
+          content: t('view_draft', { folder: '' }),
+          duration: 5,
+        });
       }
     });
 
     // 监听下载完成
     ipcRenderer.on('download-complete', () => {
       setDownloading(false);
-      setProgress(100);
-      setProgressText(t('download_complete'));
-      setTimeout(() => {
-        setProgress(0);
-        setProgressText('');
-      }, 3000);
+      
+      // 使用 Ant Design 的 message 组件显示成功消息
+      message.success({
+        content: t('view_draft', { folder: '' }),
+        duration: 5,
+      });
     });
 
     // 监听下载错误
     ipcRenderer.on('download-error', (event, error) => {
       setDownloading(false);
-      setErrorMessage(`${t('error_prefix')}${error}`);
+      setProgress(0); // 隐藏进度条
+      setProgressText('');
+      
+      // 使用 Ant Design 的 message 组件显示错误消息
+      message.error({
+        content: `${t('error_prefix')}${error}`,
+        duration: 5,
+      });
     });
 
     // 监听更新消息
@@ -122,12 +155,12 @@ const App = () => {
     return () => {
       ipcRenderer.removeAllListeners('protocol-url');
       ipcRenderer.removeAllListeners('download-progress');
-      ipcRenderer.removeAllListeners('download-status'); // 添加这一行
+      ipcRenderer.removeAllListeners('download-status');
       ipcRenderer.removeAllListeners('download-complete');
       ipcRenderer.removeAllListeners('download-error');
       ipcRenderer.removeAllListeners('update-message');
     };
-  }, [t]); // 添加t作为依赖，确保翻译更新时重新运行
+  }, [t, draftFolder]); // 添加draftFolder作为依赖，确保draftFolder更新时重新运行
 
   // 切换语言
   const toggleLanguage = (newLang) => {
@@ -179,8 +212,11 @@ const App = () => {
   };
 
   // 处理下载
-  const handleDownload = () => {
-    if (!draftId) {
+  const handleDownload = (draftIdParam) => {
+    // 使用传入的参数或状态中的值
+    const currentDraftId = draftIdParam || draftId;
+    
+    if (!currentDraftId) {
       message.error(t('input_required'));
       return;
     }
@@ -198,12 +234,11 @@ const App = () => {
     setErrorMessage('');
 
     const params = {
-      draft_id:draftId,
-      draft_folder: draftFolder || '',
+      draft_id: currentDraftId,
+      draft_folder: draftFolder,
       is_capcut: isCapcut
     };
 
-    debugger;
     // 发送到主进程
     ipcRenderer.send('process-parameters', params);
   };
@@ -213,7 +248,7 @@ const App = () => {
       <Layout className="app-container">
         <Header className="app-header">
           <div className="app-title">
-            <img src={logo} alt="CapCutMaker Logo" className="app-logo" />
+            <img src={logo} alt="CapCutAPI Logo" className="app-logo" />
             <Title level={3} style={{ margin: 0 }}>{t('title')}</Title>
           </div>
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -277,12 +312,10 @@ const App = () => {
               />
             </div>
             
-            {/* 移除了Draft Folder和App Type输入框 */}
-            
             <div className="form-item">
               <Button 
                 type="primary" 
-                onClick={handleDownload}
+                onClick={() => handleDownload()}
                 loading={downloading}
                 block
               >

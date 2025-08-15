@@ -4,6 +4,39 @@ const url = require('url');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 
+// 添加 i18next 相关依赖
+const i18next = require('i18next');
+const Backend = require('i18next-fs-backend');
+
+// 初始化 i18next
+let i18n;
+
+function initI18n() {
+  const isDev = process.env.NODE_ENV === 'development';
+  const localesPath = isDev 
+    ? path.join(__dirname, 'locales') 
+    : path.join(process.resourcesPath, 'locales');
+
+  i18n = i18next.use(Backend).init({
+    backend: {
+      loadPath: path.join(localesPath, '{{lng}}/{{ns}}.json')
+    },
+    fallbackLng: 'en',
+    debug: isDev,
+    interpolation: {
+      escapeValue: false
+    }
+  });
+
+  return i18n;
+}
+
+// 在应用启动时初始化 i18n
+app.whenReady().then(() => {
+  initI18n();
+  createWindow();
+});
+
 // 添加electron-reload以支持热重载
 require('electron-reload')(__dirname, {
   electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
@@ -251,7 +284,7 @@ ipcMain.on('process-parameters', async (event, params) => {
   const { draft_id, draft_folder, is_capcut } = params;
   
   if (!draft_id) {
-    event.reply('process-result', { success: false, message: '缺少草稿ID' });
+    event.reply('process-result', { success: false, message: i18next.t('missing_draft_id') });
     return;
   }
   
@@ -281,43 +314,61 @@ ipcMain.on('process-parameters', async (event, params) => {
     // 通知渲染进程任务已开始
     event.reply('process-result', { 
       success: true, 
-      message: `开始处理草稿 ${draft_id}，任务ID: ${taskId}` 
+      message: i18next.t('start_processing', { draft_id, task_id: taskId })
     });
     
     // 发送下载中的loading状态
     event.reply('download-status', {
       status: 'loading',
-      message: '正在下载草稿文件，请稍候...' 
+      message: i18next.t('downloading_please_wait')
     });
     
-    // 调用saveDraftBackground函数
-    await saveDraftBackground(draft_id, draftFolder, taskId);
+    // 定义进度回调函数
+    const progressCallback = (progress, text) => {
+      if (progress < 0) {
+        // 错误情况
+        event.reply('download-error', text);
+      } else {
+        // 正常进度更新
+        event.reply('download-progress', { progress, text });
+      }
+    };
     
-    // 下载完成，发送完成状态
-    event.reply('download-status', {
-      status: 'completed',
-      message: '下载完成！'
-    });
+    // 调用saveDraftBackground函数，传入进度回调
+    const result = await saveDraftBackground(draft_id, draftFolder, taskId, progressCallback);
     
-    // // 通知渲染进程任务完成
-    // if (draftUrl) {
-    //   event.reply('process-result', { 
-    //     success: true, 
-    //     message: `草稿处理完成，URL: ${draftUrl}`,
-    //     draft_url: draftUrl
-    //   });
-    // } else {
-    //   event.reply('process-result', { 
-    //     success: false, 
-    //     message: '草稿处理失败，请查看日志' 
-    //   });
-    // }
+    if (result.success) {
+      // 下载完成，发送完成状态
+      event.reply('download-status', {
+        status: 'completed',
+        message: result.message || i18next.t('download_complete')
+      });
+
+    } else {
+      // 下载失败，发送错误状态
+      event.reply('download-status', {
+        status: 'error',
+        message: result.message || i18next.t('download_failed')
+      });
+      
+      // 发送详细错误信息
+      event.reply('download-error', result.error || i18next.t('processing_failed', { error: '未知错误' }));
+    }
   } catch (error) {
     console.error('处理草稿时出错:', error);
     event.reply('process-result', { 
       success: false, 
-      message: `处理草稿时出错: ${error.message}` 
+      message: i18next.t('processing_failed', { error: error.message })
     });
+    
+    // 发送下载错误状态
+    event.reply('download-status', {
+      status: 'error',
+      message: i18next.t('download_failed')
+    });
+    
+    // 发送详细错误信息
+    event.reply('download-error', error.message);
   }
 });
 
@@ -327,3 +378,8 @@ if (app.isPackaged) {
 } else {
   process.env.LOCALES_PATH = path.join(__dirname, 'locales');
 }
+
+// 添加 IPC 处理程序来获取翻译
+ipcMain.handle('get-translation', (event, key) => {
+  return i18next.t(key);
+});

@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>CapCutMaker6</title>
+  <title id="page-title">CapCutAPI</title>
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
   <style>
     body {
@@ -139,7 +139,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>CapCutMaker</h1>
+    <h1 id="page-title">CapCutAPI</h1>
     <div class="version" id="version-info">加载中...</div>
     
     <div class="content">
@@ -210,6 +210,12 @@
     // 显示版本信息
     const { appVersion, versionCode } = getVersionInfo();
     document.getElementById('version-info').textContent = `版本 ${appVersion} (版本码: ${versionCode})`;
+    
+    // 使用i18next设置页面标题
+    ipcRenderer.invoke('get-translation', 'title').then(translation => {
+      document.getElementById('page-title').textContent = translation;
+      document.title = translation;
+    });
     
     // 监听来自主进程的协议URL消息
     ipcRenderer.on('protocol-url', (event, url) => {
