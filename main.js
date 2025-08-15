@@ -38,13 +38,8 @@ app.whenReady().then(() => {
 });
 
 const isDev = process.env.NODE_ENV === 'development';
-// 添加electron-reload以支持热重载
-// require('electron-reload')(__dirname, {
-//   electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
-//   hardResetMethod: 'exit'
-// });
-
-if (isDev) {
+// 添加electron-reload以支持热重载（仅在开发环境中）
+if (process.env.NODE_ENV === 'development') {
   require('electron-reload')(__dirname, {
     electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
     hardResetMethod: 'exit'
