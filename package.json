@@ -10,6 +10,7 @@
     "build:mac": "webpack && electron-builder --mac",
     "build:win": "webpack && electron-builder --win",
     "dev": "webpack --watch",
+    "dev-start": "concurrently \"npm run dev\" \"npm run start\"",
     "test": "echo \"No tests specified\" && exit 0"
   },
   "build": {
@@ -22,8 +23,29 @@
         "capcutmaker"
       ]
     },
+    "asar": true,
+    "directories": {
+      "output": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "package.json",
+      "locales/**/*",
+      "src/logo.png"
+    ],
+    "extraResources": [
+      {
+        "from": "./resources",
+        "to": "resources",
+        "filter": ["**/*"]
+      }
+    ],
     "mac": {
       "category": "public.app-category.utilities",
+      "asarUnpack": [
+        "**/*.node"
+      ],
       "icon": "src/logo.icns",
       "target": [
         {
@@ -56,7 +78,7 @@
     }
   },
   "keywords": [
-    "capcutmaker",
+    "capcutapi",
     "electron",
     "desktop"
   ],

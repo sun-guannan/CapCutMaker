@@ -4,6 +4,7 @@ node_modules/
 # 构建输出
 dist/
 out/
+build/
 
 # 日志
 npm-debug.log*

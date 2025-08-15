@@ -37,11 +37,19 @@ app.whenReady().then(() => {
   createWindow();
 });
 
+const isDev = process.env.NODE_ENV === 'development';
 // 添加electron-reload以支持热重载
-require('electron-reload')(__dirname, {
-  electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
-  hardResetMethod: 'exit'
-});
+// require('electron-reload')(__dirname, {
+//   electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
+//   hardResetMethod: 'exit'
+// });
+
+if (isDev) {
+  require('electron-reload')(__dirname, {
+    electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
+    hardResetMethod: 'exit'
+  });
+}
 
 // 读取package.json获取版本号
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
@@ -149,19 +157,32 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      webSecurity: false, // 允许加载本地资源
+      allowRunningInsecureContent: true, // 允许运行不安全内容
       additionalArguments: [`--app-version=${appVersion}`, `--version-code=${versionCode}`]
     }
   });
 
-  // 加载打包后的index.html文件
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadFile('public/index.html');
+  const isDev = process.env.NODE_ENV === 'development';
+
+  if (isDev) {
+    // 在开发模式下，webpack --watch 会将文件输出到 dist 目录
+    // mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
+    mainWindow.loadFile('dist/index.html');
+
   } else {
+    // 生产环境，加载dist目录下的index.html
+    // mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    // const filePath = path.join(app.getAppPath(), 'dist', 'index.html');
+    // console.log('Loading file from:', filePath);
+    // mainWindow.loadFile(filePath);
     mainWindow.loadFile('dist/index.html');
   }
 
   // 打开开发者工具
-  mainWindow.webContents.openDevTools();
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
 
   // 当window被关闭，这个事件会被触发
   mainWindow.on('closed', function () {
