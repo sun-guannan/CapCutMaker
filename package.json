@@ -4,7 +4,7 @@
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "NODE_ENV=development electron .",
     "debug": "electron --inspect=9229 .",
     "build": "webpack && electron-builder --mac --win",
     "build:mac": "webpack && electron-builder --mac",

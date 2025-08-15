@@ -37,11 +37,13 @@ app.whenReady().then(() => {
   createWindow();
 });
 
-// 添加electron-reload以支持热重载
-require('electron-reload')(__dirname, {
-  electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
-  hardResetMethod: 'exit'
-});
+// 添加electron-reload以支持热重载（仅在开发环境中）
+if (process.env.NODE_ENV === 'development') {
+  require('electron-reload')(__dirname, {
+    electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
+    hardResetMethod: 'exit'
+  });
+}
 
 // 读取package.json获取版本号
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
