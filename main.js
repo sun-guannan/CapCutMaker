@@ -155,22 +155,19 @@ function createWindow() {
       webSecurity: false, // 允许加载本地资源
       allowRunningInsecureContent: true, // 允许运行不安全内容
       additionalArguments: [`--app-version=${appVersion}`, `--version-code=${versionCode}`]
-    }
+    },
+    // 添加这两个选项来去掉窗口标题栏
+    frame: false,
+    titleBarStyle: 'hidden'
   });
 
   const isDev = process.env.NODE_ENV === 'development';
 
   if (isDev) {
     // 在开发模式下，webpack --watch 会将文件输出到 dist 目录
-    // mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
     mainWindow.loadFile('dist/index.html');
-
   } else {
     // 生产环境，加载dist目录下的index.html
-    // mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
-    // const filePath = path.join(app.getAppPath(), 'dist', 'index.html');
-    // console.log('Loading file from:', filePath);
-    // mainWindow.loadFile(filePath);
     mainWindow.loadFile('dist/index.html');
   }
 

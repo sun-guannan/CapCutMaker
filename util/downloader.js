@@ -122,8 +122,5 @@ async function downloadFile(url, localFilename, maxRetries = 3, timeout = 180000
 }
 
 module.exports = {
-    downloadVideo,
-    downloadImage,
-    downloadAudio,
     downloadFile
 };
