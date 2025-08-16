@@ -156,13 +156,8 @@ function createWindow() {
       allowRunningInsecureContent: true, // 允许运行不安全内容
       additionalArguments: [`--app-version=${appVersion}`, `--version-code=${versionCode}`]
     },
+    autoHideMenuBar: true
   });
-
-  if (process.platform === 'win32') {
-    // 添加这两个选项来去掉窗口标题栏
-    windowOptions.titleBarStyle = 'hidden';
-  }
-
   const isDev = process.env.NODE_ENV === 'development';
 
   if (isDev) {
@@ -235,7 +230,7 @@ if (!gotTheLock) {
   });
 
   // Electron 完成初始化并准备创建浏览器窗口时调用此方法
-  app.whenReady().then(createWindow);
+  // app.whenReady().then(createWindow);
 
   // 协议处理 - macOS
   app.on('open-url', (event, url) => {
@@ -258,8 +253,12 @@ if (!gotTheLock) {
   app.on('activate', function () {
     // 在macOS上，当单击dock图标并且没有其他窗口打开时，
     // 通常在应用程序中重新创建一个窗口
-    if (mainWindow === null) createWindow();
-  });
+    if (!mainWindow) {
+        // createWindow();
+    } else {
+        mainWindow.focus();
+    }
+});
 }
 
 // 在macOS上，需要在app.setAsDefaultProtocolClient之前调用这个
