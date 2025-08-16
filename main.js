@@ -156,10 +156,12 @@ function createWindow() {
       allowRunningInsecureContent: true, // 允许运行不安全内容
       additionalArguments: [`--app-version=${appVersion}`, `--version-code=${versionCode}`]
     },
-    // 添加这两个选项来去掉窗口标题栏
-    frame: false,
-    titleBarStyle: 'hidden'
   });
+
+  if (process.platform === 'win32') {
+    // 添加这两个选项来去掉窗口标题栏
+    windowOptions.titleBarStyle = 'hidden';
+  }
 
   const isDev = process.env.NODE_ENV === 'development';
 
