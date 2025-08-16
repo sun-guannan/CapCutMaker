@@ -32,7 +32,12 @@
       "main.js",
       "package.json",
       "locales/**/*",
-      "src/logo.png"
+      "src/logo.png",
+      "src/**/*",
+      "public/**/*",
+      "util/**/*",
+      "template/**/*",
+      "template_jianying/**/*"
     ],
     "extraResources": [
       {

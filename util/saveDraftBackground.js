@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
 const { Worker } = require('worker_threads');
 const { promisify } = require('util');
 const axios = require('axios');
@@ -9,9 +8,6 @@ const { log } = require('console');
 
 // 获取 i18next 实例
 const i18next = require('i18next');
-
-// 配置
-const IS_CAPCUT_ENV = true; // 根据实际情况设置
 
 // 日志记录器
 const logger = {
@@ -71,7 +67,7 @@ async function copyFolderRecursive(source, destination) {
  * @param {Function} progressCallback - 进度回调函数
  * @returns {Promise<Object>} - 返回结果对象 {success: boolean, error: string, message: string}
  */
-async function saveDraftBackground(draftId, draftFolder, taskId, progressCallback) {
+async function saveDraftBackground(draftId, draftFolder, taskId, progressCallback, is_capcut) {
   try {
     // 初始化进度
     if (progressCallback) {
@@ -81,16 +77,19 @@ async function saveDraftBackground(draftId, draftFolder, taskId, progressCallbac
     // 1.从API获取草稿信息
     let script;
     try {
-        const response = await axios.post('https://open.capcutapi.top/cut_jianying/query_script', 
-            { draft_id: draftId },
+        const response = await axios.post('https://open.capcutapi.top/cut_capcut/query_script', 
+            { 
+              draft_id: draftId,
+              is_capcut: is_capcut
+            },
             { 
             headers: {
                 'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJvY2FQTjYtdjhJTU5nOHN2NUxzSWhOR19idmcwIiwibmFtZSI6Im9jYVBONi12OElNTmc4c3Y1THNJaE5HX2J2ZzAiLCJpYXQiOjB9.EscpN9vafqpGT9llSJDPWFkPyYPR1X0NAtEaT0ufxOAxM0S4pmSTPnnnbioDnoNfPdZXA8DlVkFl_O4aEWSZ33d7iNAhgMJQzrxuZPaXcO1NivibafmCBSSvRufYJ8bLCUeImh248ulywhNJ0c9Ru4U9Yd7n3dEocMOZ0-1PLwR88LXyyyyurYjlnibY51V6b2s70rwfkXQV-hsVWGzDwXOTB4f2DULruGv1c5OCdTjr8txVTvEVZw_IDVH-zENifaDZyKoKNatlvsvRbY3lF06D-vpuXg4NsawetcdQ6ORQcH0oftPmCP7FJPflRBi3ibH_Eb7VS4AYvl4ft-b9kg',
                 'Content-Type': 'application/json'
-            }
+            },
             }
         );
-
+        console.log()
         if (response.data && response.data.success) {
             script = JSON.parse(JSON.parse(JSON.stringify(response.data)).output);
             logger.info(`成功从API获取草稿 ${draftId}。`);
@@ -121,10 +120,13 @@ async function saveDraftBackground(draftId, draftFolder, taskId, progressCallbac
     logger.info(`开始保存草稿: ${draftId}`);
     
     // 根据配置选择不同的模板目录
-    const templateDir = IS_CAPCUT_ENV ? "template" : "template_jianying";
+    const templateDir = is_capcut ? "template" : "template_jianying";
+    
+    // 获取应用程序根目录
+    const appRoot = path.join(__dirname, '..');
     
     // 复制模板目录到草稿路径
-    const templatePath = path.join(process.cwd(), templateDir);
+    const templatePath = path.join(appRoot, templateDir);
     logger.info(`复制模板目录 ${templatePath} 到草稿路径 ${draftPath}`);
     await copyFolderRecursive(templatePath, draftPath);
     logger.info(`模板目录复制完成`);

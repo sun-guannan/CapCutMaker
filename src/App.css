@@ -117,3 +117,12 @@ body {
   display: flex;
   align-items: center;
 }
+
+/* 添加在文件末尾 */
+.app-segmented {
+  border-radius: 8px;
+}
+
+.app-segmented .ant-segmented-item-selected {
+  color: #1677ff;
+}

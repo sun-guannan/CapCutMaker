@@ -1,7 +1,7 @@
 {
   "title": "CapCutAPI",
   "version": "版本",
-  "draft_id_label": "草稿ID (draft_id):",
+  "draft_id_label": "草稿ID:",
   "draft_id_placeholder": "请输入草稿ID",
   "draft_folder_label": "剪映草稿目录:",
   "draft_folder_placeholder": "请输入草稿目录",

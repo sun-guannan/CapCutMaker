@@ -174,10 +174,10 @@ function createWindow() {
     mainWindow.loadFile('dist/index.html');
   }
 
-  // 打开开发者工具
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
+  // // 打开开发者工具
+  // if (isDev) {
+  //   mainWindow.webContents.openDevTools();
+  // }
 
   // 当window被关闭，这个事件会被触发
   mainWindow.on('closed', function () {
@@ -351,7 +351,7 @@ ipcMain.on('process-parameters', async (event, params) => {
     };
     
     // 调用saveDraftBackground函数，传入进度回调
-    const result = await saveDraftBackground(draft_id, draftFolder, taskId, progressCallback);
+    const result = await saveDraftBackground(draft_id, draftFolder, taskId, progressCallback, is_capcut);
     
     if (result.success) {
       // 下载完成，发送完成状态

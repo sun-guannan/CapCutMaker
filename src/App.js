@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Typography, Input, Switch, Button, Progress, message, ConfigProvider, Dropdown, Menu, Modal } from 'antd';
+import { Segmented, Layout, Typography, Input, Switch, Button, Progress, message, ConfigProvider, Dropdown, Menu, Modal } from 'antd';
 import { CloudDownloadOutlined } from '@ant-design/icons';
 import zhCN from 'antd/locale/zh_CN';
 import enUS from 'antd/locale/en_US';
@@ -363,13 +363,15 @@ const App = () => {
           <div className="settings-form-item">
             <Text strong>{t('app_type_label')}</Text>
             <div className="switch-container">
-              <span className={!tempIsCapcut ? 'active-text' : ''}>{t('jianying')}</span>
-              <Switch 
-                checked={tempIsCapcut}
-                onChange={setTempIsCapcut}
-                className="app-switch"
+              <Segmented
+                options={[
+                  { value: 'jianying', label: t('jianying') },
+                  { value: 'capcut', label: t('capcut') }
+                ]}
+                value={tempIsCapcut ? 'capcut' : 'jianying'}
+                onChange={(value) => setTempIsCapcut(value === 'capcut')}
+                className="app-segmented"
               />
-              <span className={tempIsCapcut ? 'active-text' : ''}>{t('capcut')}</span>
             </div>
           </div>
         </Modal>
