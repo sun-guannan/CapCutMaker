@@ -269,6 +269,8 @@ app.setAsDefaultProtocolClient('capcutmaker');
 const Store = require('electron-store');
 const store = new Store();
 
+// store.clear()
+
 // 添加保存设置的IPC监听器
 ipcMain.on('save-settings', (event, settings) => {
   console.log('保存设置:', settings);
