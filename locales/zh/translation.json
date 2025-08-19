@@ -34,5 +34,7 @@
   "missing_draft_id": "缺少草稿ID",
   "start_processing": "开始处理草稿 {{draft_id}}，任务ID: {{task_id}}",
   "downloading_please_wait": "正在下载草稿文件，请稍候...",
-  "view_draft": "下载完成！ 打开剪映/CapCut查看"
+  "view_draft": "下载完成！ 打开剪映/CapCut查看",
+  "api_key_label": "API KEY:",
+  "api_key_placeholder": "请输入API KEY"
 }
