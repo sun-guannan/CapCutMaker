@@ -61,6 +61,8 @@ const App = () => {
   const [settingsVisible, setSettingsVisible] = useState(false); // 添加设置对话框可见性状态
   const [tempDraftFolder, setTempDraftFolder] = useState(''); // 临时存储设置对话框中的草稿文件夹路径
   const [tempIsCapcut, setTempIsCapcut] = useState(true); // 临时存储设置对话框中的应用类型
+  const [tempApiKey, setTempApiKey] = useState(''); // 临时存储设置对话框中的API_KEY
+  const [apiKey, setApiKey] = useState(''); // 存储API_KEY
 
   // 修改useEffect部分，移除对旧版本的兼容处理
   useEffect(() => {
@@ -71,6 +73,9 @@ const App = () => {
       setDraftFolder(draftFolderValue);
       if (settings.isCapcut !== undefined) {
         setIsCapcut(settings.isCapcut);
+      }
+      if (settings.apiKey !== undefined) {
+        setApiKey(settings.apiKey);
       }
       
       // 如果draftFolder为空，自动弹出设置对话框
@@ -185,6 +190,7 @@ const App = () => {
   const openSettings = () => {
     setTempDraftFolder(draftFolder || ''); // 确保是空字符串而不是undefined
     setTempIsCapcut(isCapcut);
+    setTempApiKey(apiKey || ''); // 设置临时API_KEY
     setSettingsVisible(true);
   };
 
@@ -192,10 +198,12 @@ const App = () => {
   const saveSettings = () => {
     setDraftFolder(tempDraftFolder);
     setIsCapcut(tempIsCapcut);
+    setApiKey(tempApiKey); // 保存API_KEY
     // 保存设置到主进程
     ipcRenderer.send('save-settings', {
       draftFolder: tempDraftFolder,
-      isCapcut: tempIsCapcut
+      isCapcut: tempIsCapcut,
+      apiKey: tempApiKey // 添加API_KEY
     });
     setSettingsVisible(false);
     message.success(t('settings_saved'));
@@ -345,12 +353,21 @@ const App = () => {
           onOk={saveSettings}
           onCancel={cancelSettings}
           okText={t('save')}
-          okButtonProps={{ disabled: !tempDraftFolder }} // 如果tempDraftFolder为空，禁用保存按钮
+          okButtonProps={{ disabled: !tempDraftFolder || !tempApiKey }} // 如果tempDraftFolder为空，禁用保存按钮
           styles={{ body: { marginTop: '50px', marginBottom: '50px' } }}
           cancelText={t('cancel')}
           closable={!!draftFolder} // 如果draftFolder为空，不允许通过X关闭对话框
           maskClosable={!!draftFolder} // 如果draftFolder为空，不允许通过点击遮罩关闭对话框
         >
+          <div className="settings-form-item">
+            <Text strong>{t('api_key_label')}</Text>
+            <Input 
+              className="settings-input"
+              value={tempApiKey}
+              onChange={(e) => setTempApiKey(e.target.value)}
+              placeholder={t('api_key_placeholder')}
+            />
+          </div>
           <div className="settings-form-item">
             <Text strong>{t('draft_folder_label')}</Text>
             <Input 

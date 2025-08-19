@@ -34,5 +34,7 @@
   "missing_draft_id": "Missing draft ID",
   "start_processing": "Start processing draft {{draft_id}}, task ID: {{task_id}}",
   "downloading_please_wait": "Downloading draft files, please wait...",
-  "view_draft": "Download complete! Find in CapCut or JianYing"
+  "view_draft": "Download complete! Find in CapCut or JianYing",
+  "api_key_label": "API KEY:",
+  "api_key_placeholder": "Please enter API KEY"
 }

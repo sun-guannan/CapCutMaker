@@ -280,16 +280,21 @@ ipcMain.on('save-settings', (event, settings) => {
   if (settings.isCapcut !== undefined) {
     store.set('isCapcut', settings.isCapcut);
   }
+  if (settings.apiKey !== undefined) {
+    store.set('apiKey', settings.apiKey);
+  }
 });
 
 // 修改获取设置的IPC处理函数
 ipcMain.handle('get-draft-folder', () => {
   const draftFolder = store.get('draftFolder', ''); // 默认为空字符串
   const isCapcut = store.get('isCapcut', true); // 默认为true
+  const apiKey = store.get('apiKey', ''); // 默认为空字符串
   
   return {
     draftFolder: draftFolder,
-    isCapcut: isCapcut
+    isCapcut: isCapcut,
+    apiKey: apiKey
   };
 });
 
@@ -350,8 +355,11 @@ ipcMain.on('process-parameters', async (event, params) => {
       }
     };
     
-    // 调用saveDraftBackground函数，传入进度回调
-    const result = await saveDraftBackground(draft_id, draftFolder, taskId, progressCallback, is_capcut);
+    // 获取API_KEY
+    const apiKey = store.get('apiKey', '');
+    
+    // 调用saveDraftBackground函数，传入进度回调和API_KEY
+    const result = await saveDraftBackground(draft_id, draftFolder, taskId, progressCallback, is_capcut, apiKey);
     
     if (result.success) {
       // 下载完成，发送完成状态

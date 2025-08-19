@@ -65,9 +65,11 @@ async function copyFolderRecursive(source, destination) {
  * @param {string} draftFolder - 草稿文件夹路径
  * @param {string} taskId - 任务ID
  * @param {Function} progressCallback - 进度回调函数
+ * @param {boolean} is_capcut - 是否为CapCut
+ * @param {string} apiKey - API密钥
  * @returns {Promise<Object>} - 返回结果对象 {success: boolean, error: string, message: string}
  */
-async function saveDraftBackground(draftId, draftFolder, taskId, progressCallback, is_capcut) {
+async function saveDraftBackground(draftId, draftFolder, taskId, progressCallback, is_capcut, apiKey) {
   try {
     // 初始化进度
     if (progressCallback) {
@@ -76,6 +78,7 @@ async function saveDraftBackground(draftId, draftFolder, taskId, progressCallbac
     
     // 1.从API获取草稿信息
     let script;
+    console.log('is_capcut_', is_capcut)
     try {
         const response = await axios.post('https://open.capcutapi.top/cut_capcut/query_script', 
             { 
@@ -84,12 +87,12 @@ async function saveDraftBackground(draftId, draftFolder, taskId, progressCallbac
             },
             { 
             headers: {
-                'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJvY2FQTjYtdjhJTU5nOHN2NUxzSWhOR19idmcwIiwibmFtZSI6Im9jYVBONi12OElNTmc4c3Y1THNJaE5HX2J2ZzAiLCJpYXQiOjB9.EscpN9vafqpGT9llSJDPWFkPyYPR1X0NAtEaT0ufxOAxM0S4pmSTPnnnbioDnoNfPdZXA8DlVkFl_O4aEWSZ33d7iNAhgMJQzrxuZPaXcO1NivibafmCBSSvRufYJ8bLCUeImh248ulywhNJ0c9Ru4U9Yd7n3dEocMOZ0-1PLwR88LXyyyyurYjlnibY51V6b2s70rwfkXQV-hsVWGzDwXOTB4f2DULruGv1c5OCdTjr8txVTvEVZw_IDVH-zENifaDZyKoKNatlvsvRbY3lF06D-vpuXg4NsawetcdQ6ORQcH0oftPmCP7FJPflRBi3ibH_Eb7VS4AYvl4ft-b9kg',
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             }
         );
-        console.log()
+
         if (response.data && response.data.success) {
             script = JSON.parse(JSON.parse(JSON.stringify(response.data)).output);
             logger.info(`成功从API获取草稿 ${draftId}。`);
