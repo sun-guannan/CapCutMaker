@@ -1,8 +1,8 @@
 {
   "title": "CapCutAPI",
   "version": "版本",
-  "draft_id_label": "草稿ID:",
-  "draft_id_placeholder": "请输入草稿ID",
+  "draft_id_label": "草稿URL:",
+  "draft_id_placeholder": "请输入草稿URL",
   "draft_folder_label": "剪映草稿目录:",
   "draft_folder_placeholder": "请输入草稿目录",
   "app_type_label": "应用类型:",
@@ -34,7 +34,10 @@
   "missing_draft_id": "缺少草稿ID",
   "start_processing": "开始处理草稿 {{draft_id}}，任务ID: {{task_id}}",
   "downloading_please_wait": "正在下载草稿文件，请稍候...",
-  "view_draft": "下载完成！ 打开剪映/CapCut查看",
+  "view_draft": "{{draft_id}} 下载完成！ 打开剪映/CapCut查看",
   "api_key_label": "API KEY:",
-  "api_key_placeholder": "请输入API KEY"
+  "api_key_placeholder": "请输入API KEY",
+  "copy_draft_failed": "草稿下载失败",
+  "copying_draft": "正在复制草稿，请稍候...",
+  "copy_draft_success": "草稿复制成功，正在下载..."
 }

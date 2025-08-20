@@ -1,8 +1,8 @@
 {
   "title": "CapCutAPI",
   "version": "Version",
-  "draft_id_label": "Draft ID:",
-  "draft_id_placeholder": "Please enter draft ID",
+  "draft_url_label": "Draft URL:",
+  "draft_url_placeholder": "Please enter draft URL",
   "draft_folder_label": "Draft Folder:",
   "draft_folder_placeholder": "Enter draft save path",
   "app_type_label": "App Type:",
@@ -34,7 +34,10 @@
   "missing_draft_id": "Missing draft ID",
   "start_processing": "Start processing draft {{draft_id}}, task ID: {{task_id}}",
   "downloading_please_wait": "Downloading draft files, please wait...",
-  "view_draft": "Download complete! Find in CapCut or JianYing",
+  "view_draft": "Download {{draft_id}} complete! Find in CapCut or JianYing",
   "api_key_label": "API KEY:",
-  "api_key_placeholder": "Please enter API KEY"
+  "api_key_placeholder": "Please enter API KEY",
+  "copy_draft_failed": "Failed to copy draft URL",
+  "copying_draft": "Copying draft, please wait...",
+  "copy_draft_success": "Draft copied successfully, downloading..."
 }
