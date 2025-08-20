@@ -47,6 +47,7 @@ function parseUrlParams(protocolUrl) {
 
 const App = () => {
   const { t, i18n } = useTranslation(); // 使用useTranslation hook
+  const [draftUrl, setDraftUrl] = useState('');
   const [draftId, setDraftId] = useState('');
   const [draftFolder, setDraftFolder] = useState('');
   const [isCapcut, setIsCapcut] = useState(true);
@@ -63,6 +64,8 @@ const App = () => {
   const [tempIsCapcut, setTempIsCapcut] = useState(true); // 临时存储设置对话框中的应用类型
   const [tempApiKey, setTempApiKey] = useState(''); // 临时存储设置对话框中的API_KEY
   const [apiKey, setApiKey] = useState(''); // 存储API_KEY
+  const [downloadComplete, setDownloadComplete] = useState(false);
+  const [completedDraftId, setCompletedDraftId] = useState('');
 
   // 修改useEffect部分，移除对旧版本的兼容处理
   useEffect(() => {
@@ -113,12 +116,16 @@ const App = () => {
     // 监听下载状态
     ipcRenderer.on('download-status', (event, data) => {
       if (data.status === 'completed') {
+        console.log('download-status completed')
+        console.log(data)
         setDownloading(false);
         setProgress(0);
+        setDownloadComplete(true);
+        setCompletedDraftId(data.draft_id);
         
         // 使用 Ant Design 的 message 组件显示成功消息
         message.success({
-          content: t('view_draft', { folder: '' }),
+          content: t('view_draft', { draft_id: data.draft_id }),
           duration: 5,
         });
       }
@@ -127,10 +134,14 @@ const App = () => {
     // 监听下载完成
     ipcRenderer.on('download-complete', () => {
       setDownloading(false);
+      setDownloadComplete(true);
+      setCompletedDraftId(draftId);
+
+      console.log('download-complete')
       
       // 使用 Ant Design 的 message 组件显示成功消息
       message.success({
-        content: t('view_draft', { folder: '' }),
+        content: t('view_draft', { draft_id: draftId }),
         duration: 5,
       });
     });
@@ -222,7 +233,22 @@ const App = () => {
   // 处理下载
   const handleDownload = (draftIdParam) => {
     // 使用传入的参数或状态中的值
-    const currentDraftId = draftIdParam || draftId;
+    let currentDraftId = draftIdParam || draftId;
+    let apiKeyHash = null;
+    
+    // 如果没有draftId，尝试从draftUrl中提取
+    if (!currentDraftId && draftUrl) {
+      // 尝试解析URL中的参数
+      try {
+        const urlObj = new URL(draftUrl);
+        const params = new URLSearchParams(urlObj.search);
+        
+        currentDraftId = params.get('draft_id');
+        apiKeyHash = params.get('api_key_hash');
+      } catch (error) {
+        console.error('解析URL失败:', error);
+      }
+    }
     
     if (!currentDraftId) {
       message.error(t('input_required'));
@@ -246,6 +272,11 @@ const App = () => {
       draft_folder: draftFolder,
       is_capcut: isCapcut
     };
+    
+    // 如果有apiKeyHash，添加到参数中
+    if (apiKeyHash) {
+      params.api_key_hash = apiKeyHash;
+    }
 
     // 发送到主进程
     ipcRenderer.send('process-parameters', params);
@@ -312,11 +343,11 @@ const App = () => {
         <Content className="app-content">
           <div className="form-container">
             <div className="form-item">
-              <Text strong>{t('draft_id_label')}</Text>
+              <Text strong>{t('draft_url_label')}</Text>
               <Input 
-                value={draftId}
-                onChange={(e) => setDraftId(e.target.value)}
-                placeholder={t('draft_id_placeholder')}
+                value={draftUrl}
+                onChange={(e) => setDraftUrl(e.target.value)}
+                placeholder={t('draft_url_placeholder')}
               />
             </div>
             
@@ -335,6 +366,13 @@ const App = () => {
               <div className="form-item">
                 <Progress percent={progress} status="active" />
                 <div className="progress-text">{progressText}</div>
+              </div>
+            )}
+            
+            {downloadComplete && (
+              <div className="form-item success-message" style={{ color: '#52c41a', marginTop: '10px', textAlign: 'center' }}>
+                <CloudDownloadOutlined style={{ marginRight: '8px' }} />
+                {t('view_draft', { draft_id: completedDraftId })}
               </div>
             )}
             

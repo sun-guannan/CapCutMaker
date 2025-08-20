@@ -3,6 +3,8 @@ const path = require('path');
 const url = require('url');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
+const axios = require('axios');
+const crypto = require('crypto'); // 添加crypto模块
 
 // 添加 i18next 相关依赖
 const i18next = require('i18next');
@@ -302,7 +304,8 @@ ipcMain.on('process-parameters', async (event, params) => {
   console.log('从渲染进程接收到参数:', params);
   
   // 获取draft_id、draft_folder和is_capcut参数
-  const { draft_id, draft_folder, is_capcut } = params;
+  const { draft_id, draft_folder, is_capcut, api_key_hash } = params;
+  console.log('api_key_hash:', api_key_hash);
   
   if (!draft_id) {
     event.reply('process-result', { success: false, message: i18next.t('missing_draft_id') });
@@ -358,6 +361,54 @@ ipcMain.on('process-parameters', async (event, params) => {
     // 获取API_KEY
     const apiKey = store.get('apiKey', '');
     
+    // 计算当前API密钥的哈希值
+    const currentApiKeyHash = hashApiKey(apiKey);
+
+    console.log('currentApiKeyHash:', currentApiKeyHash);
+    
+    // 如果有api_key_hash，则调用copy_draft接口
+    if (api_key_hash && api_key_hash !== currentApiKeyHash) {
+      try {
+        // 添加复制中的提示
+        event.reply('download-status', {
+          status: 'loading',
+          message: i18next.t('copying_draft')
+        });
+        
+        const copyResponse = await axios.post('https://open.capcutapi.top/cut_jianying/copy_draft', {
+          source_api_key_hash: api_key_hash,
+          source_draft_id: draft_id
+        }, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`
+          }
+        });
+        
+        console.log('Copy draft response:', copyResponse.data);
+        
+        if (copyResponse.data.code === 200) {
+          // 复制成功，继续下载
+          console.log('Draft copied successfully');
+          // 添加复制成功的提示
+          event.reply('download-status', {
+            status: 'loading',
+            message: i18next.t('copy_draft_success')
+          });
+        } else {
+          // 复制失败，返回错误
+          throw new Error(`Copy draft failed: ${copyResponse.data.message}`);
+        }
+      } catch (copyError) {
+        console.error('Copy draft error:', copyError);
+        event.reply('download-status', {
+          status: 'error',
+          message: i18next.t('copy_draft_failed')
+        });
+        event.reply('download-error', copyError.message || 'Failed to copy draft');
+        return;
+      }
+    }
+    
     // 调用saveDraftBackground函数，传入进度回调和API_KEY
     const result = await saveDraftBackground(draft_id, draftFolder, taskId, progressCallback, is_capcut, apiKey);
     
@@ -365,6 +416,7 @@ ipcMain.on('process-parameters', async (event, params) => {
       // 下载完成，发送完成状态
       event.reply('download-status', {
         status: 'completed',
+        draft_id: draft_id,
         message: result.message || i18next.t('download_complete')
       });
 
@@ -407,3 +459,8 @@ if (app.isPackaged) {
 ipcMain.handle('get-translation', (event, key) => {
   return i18next.t(key);
 });
+
+// 计算API密钥的SHA-256哈希值
+function hashApiKey(apiKey) {
+  return crypto.createHash('sha256').update(apiKey).digest('hex');
+}
