@@ -286,7 +286,7 @@ const App = () => {
     <ConfigProvider locale={locale}>
       <Layout className="app-container">
         <Header className="app-header">
-          <div className="app-title">
+          <div className="app-title" onClick={() => window.open('https://www.capcutapi.top', '_blank', 'width=1200,height=900')}>
             <img src={logo} alt="CapCutAPI Logo" className="app-logo" />
             <Title level={3} style={{ margin: 0 }}>{t('title')}</Title>
           </div>
