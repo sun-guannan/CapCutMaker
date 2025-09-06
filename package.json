@@ -1,6 +1,6 @@
 {
   "name": "@sun-guannan/capcutmaker",
-  "version": "0.2.16",
+  "version": "0.2.17",
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {
@@ -43,7 +43,9 @@
       {
         "from": "./resources",
         "to": "resources",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "mac": {
@@ -91,6 +93,7 @@
   "license": "ISC",
   "dependencies": {
     "@ant-design/icons": "^5.2.6",
+    "adm-zip": "^0.5.16",
     "antd": "^5.12.2",
     "axios": "^1.11.0",
     "electron-log": "^5.4.2",
