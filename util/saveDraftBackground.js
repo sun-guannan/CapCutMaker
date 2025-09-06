@@ -80,7 +80,8 @@ async function saveDraftBackground(draftId, draftFolder, taskId, progressCallbac
     let script;
     console.log('is_capcut_', is_capcut)
     try {
-        const response = await axios.post('https://open.capcutapi.top/cut_capcut/query_script', 
+        const apiUrl = is_capcut ? 'https://open.capcutapi.top/cut_capcut/query_script' : 'https://open.capcutapi.top/cut_jianying/query_script';
+        const response = await axios.post(apiUrl, 
             { 
               draft_id: draftId,
               is_capcut: is_capcut
@@ -211,6 +212,40 @@ async function saveDraftBackground(draftId, draftFolder, taskId, progressCallbac
       }
     }
 
+    // 收集花字特效下载任务
+    const effects = script.materials.filters;
+    if (effects && effects.length > 0) {
+      for (const effect of effects) {
+        if (effect.type === 'TextEffect') {
+          effect.path = buildAssetPath(draftFolder, draftId, "artistEffect", effect.effect_id);
+          const downloadUrl = await downloader.getArtistEffectDownloadUrl(effect.effect_id, apiKey);
+          if (downloadUrl) {
+            downloadTasks.push({
+              type: 'text_effect',
+              func: downloader.downloadFile,
+              args: [downloadUrl, path.join(draftPath, "assets", "artistEffect", `${effect.effect_id}.zip`), 3, 180000, 'text_artist'],
+              material: effect
+            });
+          }
+        }
+      }
+    }
+
+    // 收集文本模板下载任务
+    const textTemplates = script.materials.text_templates;
+    if (textTemplates && textTemplates.length > 0) {
+      for (const template of textTemplates) {
+        const downloadUrl = `https://oss-jianying-resource.oss-cn-hangzhou.aliyuncs.com/text_template/${template.effect_id}/${template.effect_id}.zip`;
+        const localFilename = path.join(draftPath, "assets", "textTemplate", `${template.effect_id}.zip`);
+        downloadTasks.push({
+          type: 'text_template',
+          func: downloader.downloadFile,
+          args: [downloadUrl, localFilename, 3, 180000, 'text_template'],
+          material: template
+        });
+      }
+    }
+
     logger.info(`任务 ${taskId} 进度10%：共收集到 ${downloadTasks.length} 个下载任务。`);
     if (progressCallback) {
       progressCallback(30, i18next.t('start_downloading', { count: downloadTasks.length }));
@@ -278,6 +313,13 @@ async function saveDraftBackground(draftId, draftFolder, taskId, progressCallbac
       JSON.stringify(script, null, 2)
     );
     logger.info(`草稿信息已保存到 ${draftId}/draft_info.json。`);
+    
+    // 处理文本模板路径
+    if (textTemplates && textTemplates.length > 0) {
+      for (const template of textTemplates) {
+        await processTextTemplatePaths(draftId, template.effect_id, draftPath, draftFolder);
+      }
+    }
 
     // 读取并修改 draft_meta_info.json 文件
     try {
@@ -328,6 +370,41 @@ async function saveDraftBackground(draftId, draftFolder, taskId, progressCallbac
       progressCallback(-1, i18next.t('processing_failed', { error: error.message }));
     }
     return { success: false, error: error.message, message: i18next.t('processing_failed', { error: error.message }) };
+  }
+}
+
+async function processTextTemplatePaths(draftId, effectId, draftPath, draftFolder) {
+  try {
+    const processedPathsFile = path.join(draftPath, "assets", "textTemplate", effectId, "processed_paths.json");
+    if (!fs.existsSync(processedPathsFile)) {
+      logger.warning(`processed_paths.json文件不存在: ${processedPathsFile}`);
+      return;
+    }
+
+    const processedPaths = JSON.parse(await fs.promises.readFile(processedPathsFile, 'utf-8'));
+    const draftInfoPath = path.join(draftPath, "draft_info.json");
+
+    if (!fs.existsSync(draftInfoPath)) {
+      logger.warning(`draft_info.json文件不存在: ${draftInfoPath}`);
+      return;
+    }
+
+    let draftInfoContent = await fs.promises.readFile(draftInfoPath, 'utf-8');
+
+    for (const pathItem of processedPaths) {
+      if (pathItem.original_path && pathItem.target_path) {
+        const originalPath = pathItem.original_path;
+        const targetPath = pathItem.target_path;
+        const newPath = `${draftFolder}/${draftId}/assets/textTemplate/${effectId}/${targetPath}`.replace(/\\/g, '/');
+        const findPattern = new RegExp(originalPath.replace(/\\/g, '/').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+        draftInfoContent = draftInfoContent.replace(findPattern, newPath);
+      }
+    }
+
+    await fs.promises.writeFile(draftInfoPath, draftInfoContent, 'utf-8');
+    logger.info(`成功处理文本模板 ${effectId} 的路径`);
+  } catch (e) {
+    logger.error(`处理文本模板路径时出错: ${e.message}`, e);
   }
 }
 
