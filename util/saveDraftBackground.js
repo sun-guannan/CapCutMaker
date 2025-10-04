@@ -69,7 +69,7 @@ async function copyFolderRecursive(source, destination) {
  * @param {string} apiKey - API密钥
  * @returns {Promise<Object>} - 返回结果对象 {success: boolean, error: string, message: string}
  */
-async function saveDraftBackground(draftId, draftFolder, taskId, progressCallback, is_capcut, apiKey) {
+async function saveDraftBackground(draftId, draftFolder, taskId, progressCallback, is_capcut, apiKey, apiHost) {
   try {
     // 初始化进度
     if (progressCallback) {
@@ -80,7 +80,11 @@ async function saveDraftBackground(draftId, draftFolder, taskId, progressCallbac
     let script;
     console.log('is_capcut_', is_capcut)
     try {
-        const apiUrl = is_capcut ? 'https://open.capcutapi.top/cut_capcut/query_script' : 'https://open.capcutapi.top/cut_jianying/query_script';
+        // 根据apiHost构建API URL
+        const baseHost = apiHost || DEFAULT_HOST;
+        const apiPath = is_capcut ? '/cut_capcut/query_script' : '/query_script';
+        const apiUrl = baseHost + apiPath;
+        
         const response = await axios.post(apiUrl, 
             { 
               draft_id: draftId,

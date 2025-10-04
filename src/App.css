@@ -119,6 +119,17 @@ body {
   align-items: center;
 }
 
+/* 添加Collapse组件内部样式 */
+.ant-collapse-content-box {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 添加Collapse标题左对齐样式 */
+.ant-collapse-header {
+  padding-left: 0 !important;
+}
+
 /* 添加在文件末尾 */
 .app-segmented {
   border-radius: 8px;

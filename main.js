@@ -1,4 +1,8 @@
 const { app, BrowserWindow, protocol, ipcMain, dialog } = require('electron');
+
+
+// 定义常量
+const DEFAULT_HOST = 'https://open.capcutapi.top/cut_jianying';
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
@@ -285,6 +289,9 @@ ipcMain.on('save-settings', (event, settings) => {
   if (settings.apiKey !== undefined) {
     store.set('apiKey', settings.apiKey);
   }
+  if (settings.apiHost !== undefined) {
+    store.set('apiHost', settings.apiHost);
+  }
 });
 
 // 修改获取设置的IPC处理函数
@@ -292,11 +299,13 @@ ipcMain.handle('get-draft-folder', () => {
   const draftFolder = store.get('draftFolder', ''); // 默认为空字符串
   const isCapcut = store.get('isCapcut', true); // 默认为true
   const apiKey = store.get('apiKey', ''); // 默认为空字符串
+  const apiHost = store.get('apiHost', DEFAULT_HOST); // 默认API Host
   
   return {
     draftFolder: draftFolder,
     isCapcut: isCapcut,
-    apiKey: apiKey
+    apiKey: apiKey,
+    apiHost: apiHost
   };
 });
 
@@ -358,8 +367,9 @@ ipcMain.on('process-parameters', async (event, params) => {
       }
     };
     
-    // 获取API_KEY
+    // 获取API_KEY和API Host
     const apiKey = store.get('apiKey', '');
+    const apiHost = store.get('apiHost', DEFAULT_HOST);
     
     // 计算当前API密钥的哈希值
     const currentApiKeyHash = hashApiKey(apiKey);
@@ -375,7 +385,7 @@ ipcMain.on('process-parameters', async (event, params) => {
           message: i18next.t('copying_draft')
         });
         
-        const copyResponse = await axios.post('https://open.capcutapi.top/cut_jianying/copy_draft', {
+        const copyResponse = await axios.post(`${apiHost}/copy_draft`, {
           source_api_key_hash: api_key_hash,
           source_draft_id: draft_id
         }, {
@@ -409,8 +419,8 @@ ipcMain.on('process-parameters', async (event, params) => {
       }
     }
     
-    // 调用saveDraftBackground函数，传入进度回调和API_KEY
-    const result = await saveDraftBackground(draft_id, draftFolder, taskId, progressCallback, is_capcut, apiKey);
+    // 调用saveDraftBackground函数，传入进度回调、API_KEY和API Host
+    const result = await saveDraftBackground(draft_id, draftFolder, taskId, progressCallback, is_capcut, apiKey, apiHost);
     
     if (result.success) {
       // 下载完成，发送完成状态
