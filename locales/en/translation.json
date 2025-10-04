@@ -39,5 +39,8 @@
   "api_key_placeholder": "Please enter API KEY",
   "copy_draft_failed": "Failed to copy draft URL",
   "copying_draft": "Copying draft, please wait...",
-  "copy_draft_success": "Draft copied successfully, downloading..."
+  "copy_draft_success": "Draft copied successfully, downloading...",
+  "api_host_label": "API Host:",
+  "api_host_placeholder": "Enter API host, default is https://open.capcutapi.top/cut_jianying",
+  "advanced_settings": "Advanced Settings"
 }

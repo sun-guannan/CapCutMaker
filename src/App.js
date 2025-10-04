@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Segmented, Layout, Typography, Input, Switch, Button, Progress, message, ConfigProvider, Dropdown, Menu, Modal } from 'antd';
+import { Segmented, Layout, Typography, Input, Switch, Button, Progress, message, ConfigProvider, Dropdown, Menu, Modal, Collapse } from 'antd';
 import { CloudDownloadOutlined } from '@ant-design/icons';
 import zhCN from 'antd/locale/zh_CN';
 import enUS from 'antd/locale/en_US';
@@ -16,6 +16,8 @@ const { Title, Text } = Typography;
 
 // 引入electron的ipcRenderer模块
 const { ipcRenderer } = window.require('electron');
+
+const DEFAULT_HOST = 'https://open.capcutapi.top/cut_jianying';
 
 // 解析URL参数的函数
 function parseUrlParams(protocolUrl) {
@@ -64,6 +66,8 @@ const App = () => {
   const [tempIsCapcut, setTempIsCapcut] = useState(true); // 临时存储设置对话框中的应用类型
   const [tempApiKey, setTempApiKey] = useState(''); // 临时存储设置对话框中的API_KEY
   const [apiKey, setApiKey] = useState(''); // 存储API_KEY
+  const [apiHost, setApiHost] = useState(DEFAULT_HOST); // 添加API Host状态变量
+  const [tempApiHost, setTempApiHost] = useState(''); // 临时存储设置对话框中的API Host
   const [downloadComplete, setDownloadComplete] = useState(false);
   const [completedDraftId, setCompletedDraftId] = useState('');
 
@@ -79,6 +83,11 @@ const App = () => {
       }
       if (settings.apiKey !== undefined) {
         setApiKey(settings.apiKey);
+      }
+      if (settings.apiHost !== undefined) {
+        setApiHost(settings.apiHost);
+      } else {
+        setApiHost('https://open.capcutapi.top/cut_jianying'); // 默认值
       }
       
       // 如果draftFolder为空，自动弹出设置对话框
@@ -202,6 +211,7 @@ const App = () => {
     setTempDraftFolder(draftFolder || ''); // 确保是空字符串而不是undefined
     setTempIsCapcut(isCapcut);
     setTempApiKey(apiKey || ''); // 设置临时API_KEY
+    setTempApiHost(apiHost || 'https://open.capcutapi.top/cut_jianying'); // 设置临时API Host
     setSettingsVisible(true);
   };
 
@@ -210,11 +220,13 @@ const App = () => {
     setDraftFolder(tempDraftFolder);
     setIsCapcut(tempIsCapcut);
     setApiKey(tempApiKey); // 保存API_KEY
+    setApiHost(tempApiHost); // 保存API Host
     // 保存设置到主进程
     ipcRenderer.send('save-settings', {
       draftFolder: tempDraftFolder,
       isCapcut: tempIsCapcut,
-      apiKey: tempApiKey // 添加API_KEY
+      apiKey: tempApiKey, // 添加API_KEY
+      apiHost: tempApiHost // 添加API Host
     });
     setSettingsVisible(false);
     message.success(t('settings_saved'));
@@ -429,6 +441,20 @@ const App = () => {
               />
             </div>
           </div>
+
+          <Collapse ghost>
+            <Collapse.Panel header={t('advanced_settings')} key="1">
+              <div className="settings-form-item">
+                <Text strong>{t('api_host_label')}</Text>
+                <Input 
+                  className="settings-input"
+                  value={tempApiHost}
+                  onChange={(e) => setTempApiHost(e.target.value)}
+                  placeholder={t('api_host_placeholder')}
+                />
+              </div>
+            </Collapse.Panel>
+          </Collapse>
         </Modal>
       </Layout>
     </ConfigProvider>

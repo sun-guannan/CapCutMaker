@@ -39,5 +39,8 @@
   "api_key_placeholder": "请输入API KEY",
   "copy_draft_failed": "草稿下载失败",
   "copying_draft": "正在复制草稿，请稍候...",
-  "copy_draft_success": "草稿复制成功，正在下载..."
+  "copy_draft_success": "草稿复制成功，正在下载...",
+  "api_host_label": "API Host",
+  "api_host_placeholder": "https://open.capcutapi.top/cut_jianying",
+  "advanced_settings": "高级设置"
 }
