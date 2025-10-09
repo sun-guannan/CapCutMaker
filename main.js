@@ -1,4 +1,5 @@
 const { app, BrowserWindow, protocol, ipcMain, dialog } = require('electron');
+const { Worker } = require('worker_threads');
 
 
 // 定义常量
@@ -322,9 +323,6 @@ ipcMain.on('process-parameters', async (event, params) => {
   }
   
   try {
-    // 导入saveDraftBackground模块
-    const { saveDraftBackground } = require('./util/saveDraftBackground');
-    
     // 设置环境变量（如果需要）
     global.IS_CAPCUT_ENV = is_capcut === '1';
     
@@ -338,6 +336,8 @@ ipcMain.on('process-parameters', async (event, params) => {
     
     // 从 store 中获取保存的路径，如果没有则使用默认路径
     const draftFolder = store.get('draftFolder') || path.join(__dirname, 'drafts');
+    const apiKey = store.get('apiKey', '');
+    const apiHost = store.get('apiHost', DEFAULT_HOST);
     
     // 确保草稿文件夹存在
     if (!fs.existsSync(draftFolder)) {
@@ -356,20 +356,14 @@ ipcMain.on('process-parameters', async (event, params) => {
       message: i18next.t('downloading_please_wait')
     });
     
-    // 定义进度回调函数
-    const progressCallback = (progress, text) => {
-      if (progress < 0) {
-        // 错误情况
-        event.reply('download-error', text);
-      } else {
-        // 正常进度更新
-        event.reply('download-progress', { progress, text });
-      }
+    // 创建进度回调函数
+    const progressCallback = (progress, message) => {
+      event.reply('download-status', {
+        status: progress < 0 ? 'error' : 'downloading',
+        progress: progress < 0 ? 0 : progress,
+        message: message
+      });
     };
-    
-    // 获取API_KEY和API Host
-    const apiKey = store.get('apiKey', '');
-    const apiHost = store.get('apiHost', DEFAULT_HOST);
     
     // 计算当前API密钥的哈希值
     const currentApiKeyHash = hashApiKey(apiKey);
@@ -419,27 +413,59 @@ ipcMain.on('process-parameters', async (event, params) => {
       }
     }
     
-    // 调用saveDraftBackground函数，传入进度回调、API_KEY和API Host
-    const result = await saveDraftBackground(draft_id, draftFolder, taskId, progressCallback, is_capcut, apiKey, apiHost);
+    // 创建工作线程来处理下载任务
+    const worker = new Worker(path.join(__dirname, 'util/downloadWorker.js'), {
+      workerData: {
+        draft_id,
+        draftFolder,
+        taskId,
+        is_capcut,
+        apiKey,
+        apiHost
+      }
+    });
     
-    if (result.success) {
-      // 下载完成，发送完成状态
-      event.reply('download-status', {
-        status: 'completed',
-        draft_id: draft_id,
-        message: result.message || i18next.t('download_complete')
-      });
-
-    } else {
-      // 下载失败，发送错误状态
+    // 监听工作线程的消息
+    worker.on('message', (message) => {
+      if (message.type === 'progress') {
+        // 更新进度
+        progressCallback(message.progress, message.message);
+      } else if (message.type === 'complete') {
+        // 下载完成
+        event.reply('download-status', {
+          status: 'completed',
+          draft_id: draft_id,
+          message: message.message || i18next.t('download_complete')
+        });
+      } else if (message.type === 'error') {
+        // 下载失败
+        event.reply('download-status', {
+          status: 'error',
+          message: message.message || i18next.t('download_failed')
+        });
+        
+        // 发送详细错误信息
+        event.reply('download-error', message.error || i18next.t('processing_failed', { error: '未知错误' }));
+      }
+    });
+    
+    // 监听工作线程错误
+    worker.on('error', (error) => {
+      console.error('工作线程错误:', error);
       event.reply('download-status', {
         status: 'error',
-        message: result.message || i18next.t('download_failed')
+        message: i18next.t('worker_error')
       });
-      
-      // 发送详细错误信息
-      event.reply('download-error', result.error || i18next.t('processing_failed', { error: '未知错误' }));
-    }
+      event.reply('download-error', error.message || 'Worker thread error');
+    });
+    
+    // 监听工作线程退出
+    worker.on('exit', (code) => {
+      if (code !== 0) {
+        console.error(`工作线程以退出码 ${code} 退出`);
+      }
+    });
+    
   } catch (error) {
     console.error('处理草稿时出错:', error);
     event.reply('process-result', { 
@@ -454,7 +480,7 @@ ipcMain.on('process-parameters', async (event, params) => {
     });
     
     // 发送详细错误信息
-    event.reply('download-error', error.message);
+    event.reply('download-error', error.message || 'Unknown error');
   }
 });
 

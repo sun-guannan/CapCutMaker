@@ -87,7 +87,7 @@ const App = () => {
       if (settings.apiHost !== undefined) {
         setApiHost(settings.apiHost);
       } else {
-        setApiHost('https://open.capcutapi.top/cut_jianying'); // 默认值
+        setApiHost(DEFAULT_HOST); // 默认值
       }
       
       // 如果draftFolder为空，自动弹出设置对话框
@@ -124,7 +124,16 @@ const App = () => {
 
     // 监听下载状态
     ipcRenderer.on('download-status', (event, data) => {
-      if (data.status === 'completed') {
+      console.log('Download status:', data); // 添加日志以便调试
+      
+      if (data.status === 'downloading') {
+        // 处理下载中状态
+        setDownloading(true);
+        setProgress(data.progress || 0);
+        setProgressText(data.message || '');
+        setDownloadComplete(false);
+        setCompletedDraftId('');
+      } else if (data.status === 'completed') {
         console.log('download-status completed')
         console.log(data)
         setDownloading(false);
@@ -137,6 +146,14 @@ const App = () => {
           content: t('view_draft', { draft_id: data.draft_id }),
           duration: 5,
         });
+      } else if (data.status === 'error') {
+        // 处理错误状态
+        setDownloading(false);
+        setProgress(0);
+        setProgressText('');
+        setErrorMessage(data.message || 'Unknown error');
+        setDownloadComplete(false);
+        setCompletedDraftId('');
       }
     });
 
@@ -211,7 +228,7 @@ const App = () => {
     setTempDraftFolder(draftFolder || ''); // 确保是空字符串而不是undefined
     setTempIsCapcut(isCapcut);
     setTempApiKey(apiKey || ''); // 设置临时API_KEY
-    setTempApiHost(apiHost || 'https://open.capcutapi.top/cut_jianying'); // 设置临时API Host
+    setTempApiHost(apiHost || DEFAULT_HOST); // 设置临时API Host
     setSettingsVisible(true);
   };
 
@@ -377,7 +394,14 @@ const App = () => {
             {progress > 0 && (
               <div className="form-item">
                 <Progress percent={progress} status="active" />
-                <div className="progress-text">{progressText}</div>
+                <div className="progress-text">
+                  {progressText.split('\n').map((text, index) => (
+                    <React.Fragment key={index}>
+                      {text}
+                      {index < progressText.split('\n').length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
             )}
             
