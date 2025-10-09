@@ -282,11 +282,12 @@ async function saveDraftBackground(draftId, draftFolder, taskId, progressCallbac
               const total = downloadTasks.length;
               const downloadProgress = Math.floor(30 + (completedFiles / total) * 40); // 从30%到70%的进度
               
+              // 在开始下载前显示当前文件链接
               if (progressCallback) {
-                progressCallback(downloadProgress, `已下载 ${completedFiles}/${total} 个文件...`);
+                const fileUrl = task.args[0];
+                progressCallback(downloadProgress, `已完成: ${completedFiles}/${total} 个文件...\n正在下载: ${fileUrl}`);
               }
-              
-              logger.info(`任务 ${taskId}：成功下载 ${task.type} 文件。进度: ${completedFiles}/${total}`);
+              // logger.info(`任务 ${taskId}：成功下载 ${task.type} 文件。进度: ${completedFiles}/${total}`);
               return localPath;
             } catch (error) {
               logger.error(`任务 ${taskId}：下载 ${task.type} 文件失败:`, error);

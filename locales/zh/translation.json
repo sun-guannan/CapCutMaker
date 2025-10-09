@@ -42,5 +42,6 @@
   "copy_draft_success": "草稿复制成功，正在下载...",
   "api_host_label": "API Host",
   "api_host_placeholder": "https://open.capcutapi.top/cut_jianying",
-  "advanced_settings": "高级设置"
+  "advanced_settings": "高级设置",
+  "worker_error": "工作线程错误"
 }
