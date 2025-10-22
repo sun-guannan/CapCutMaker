@@ -83,9 +83,8 @@ autoUpdater.logger.transports.file.level = 'info';
 // 配置正确的更新包文件名格式
 autoUpdater.configOnLoad = true;
 autoUpdater.setFeedURL({
-  provider: 'github',
-  owner: 'sun-guannan',
-  repo: 'CapCutMaker',
+  provider: 'generic',
+  url: 'https://gh-proxy.com/https://api.github.com/repos/sun-guannan/CapCutMaker/releases',
   updaterCacheDirName: 'capcutmaker-updater'
 });
 

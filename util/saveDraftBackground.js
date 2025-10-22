@@ -122,7 +122,54 @@ async function saveDraftBackground(draftId, draftFolder, taskId, progressCallbac
     const draftPath = path.join(draftFolder, draftId);
     if (fs.existsSync(draftPath)) {
       logger.warning(`删除已存在的草稿文件夹: ${draftPath}`);
-      await fs.promises.rm(draftPath, { recursive: true, force: true });
+      try {
+        await fs.promises.rm(draftPath, { recursive: true, force: true });
+      } catch (error) {
+        // 如果是目录非空错误，尝试单独处理.backup目录
+        if (error.code === 'ENOTEMPTY') {
+          logger.warning(`无法删除目录，尝试单独处理问题文件夹: ${error.message}`);
+          
+          // 尝试先删除.backup目录中的文件
+          const backupDir = path.join(draftPath, '.backup');
+          if (fs.existsSync(backupDir)) {
+            try {
+              // 读取.backup目录中的所有文件
+              const files = await fs.promises.readdir(backupDir);
+              
+              // 逐个删除文件
+              for (const file of files) {
+                try {
+                  await fs.promises.unlink(path.join(backupDir, file));
+                } catch (unlinkError) {
+                  logger.error(`无法删除文件 ${file}: ${unlinkError.message}`);
+                }
+              }
+              
+              // 再次尝试删除.backup目录
+              await fs.promises.rmdir(backupDir);
+              
+              // 最后尝试删除整个草稿文件夹
+              await fs.promises.rm(draftPath, { recursive: true, force: true });
+            } catch (innerError) {
+              logger.error(`处理.backup目录失败: ${innerError.message}`);
+              // 提示用户关闭剪映再次下载
+              if (progressCallback) {
+                progressCallback(-1, i18next.t('close_jianying_and_retry', { error: innerError.message }) || 
+                  '删除草稿文件夹失败，请关闭剪映后再次尝试下载。');
+              }
+              return { success: false, error: innerError.message, message: '请关闭剪映后再次尝试下载' };
+            }
+          }
+        } else {
+          logger.error(`删除草稿文件夹失败: ${error.message}`);
+          // 提示用户关闭剪映再次下载
+          if (progressCallback) {
+            progressCallback(-1, i18next.t('close_jianying_and_retry', { error: error.message }) || 
+              '删除草稿文件夹失败，请关闭剪映后再次尝试下载。');
+          }
+          return { success: false, error: error.message, message: '请关闭剪映后再次尝试下载' };
+        }
+      }
     }
 
     logger.info(`开始保存草稿: ${draftId}`);

@@ -10,6 +10,7 @@ import updateIcon from '../public/update.png'; // 导入更新图标
 import settingsIcon from '../public/settings.png'; // 导入设置图标
 import { useTranslation } from 'react-i18next';
 import './i18n'; // 导入i18n配置
+import packageInfo from '../package.json'; // 导入package.json
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -480,6 +481,10 @@ const App = () => {
             </Collapse.Panel>
           </Collapse>
         </Modal>
+
+        <div className="version-info">
+            <Text type="secondary">v{packageInfo.version}</Text>
+        </div>
       </Layout>
     </ConfigProvider>
   );

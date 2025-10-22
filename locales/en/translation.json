@@ -2,7 +2,7 @@
   "title": "CapCutAPI",
   "version": "Version",
   "draft_url_label": "Draft URL:",
-  "draft_url_placeholder": "Please enter draft URL",
+  "draft_url_placeholder": "https://cn.capcutapi.top/draft/downloader?draft_id=xxx",
   "draft_folder_label": "Draft Folder:",
   "draft_folder_placeholder": "Enter draft save path",
   "app_type_label": "App Type:",
@@ -43,5 +43,6 @@
   "api_host_label": "API Host",
   "api_host_placeholder": "https://open.capcutapi.top/cut_jianying",
   "advanced_settings": "Advanced Settings",
-  "worker_error": "Worker thread error"
+  "worker_error": "Worker thread error",
+  "close_jianying_and_retry": "Failed to delete draft folder: {{error}}, please close CapCut/JianYing and try downloading again."
 }

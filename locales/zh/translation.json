@@ -1,8 +1,8 @@
 {
   "title": "CapCutAPI",
   "version": "版本",
-  "draft_id_label": "草稿URL:",
-  "draft_id_placeholder": "请输入草稿URL",
+  "draft_url_label": "草稿URL:",
+  "draft_url_placeholder": "https://cn.capcutapi.top/draft/downloader?draft_id=xxx",
   "draft_folder_label": "剪映草稿目录:",
   "draft_folder_placeholder": "请输入草稿目录",
   "app_type_label": "应用类型:",
@@ -43,5 +43,6 @@
   "api_host_label": "API Host",
   "api_host_placeholder": "https://open.capcutapi.top/cut_jianying",
   "advanced_settings": "高级设置",
-  "worker_error": "工作线程错误"
+  "worker_error": "工作线程错误",
+  "close_jianying_and_retry": "删除草稿文件夹失败: {{error}}，请关闭剪映后再次尝试下载。"
 }

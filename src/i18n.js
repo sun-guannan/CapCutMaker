@@ -26,7 +26,7 @@ i18n
     backend: {
       loadPath: path.join(localesPath, '{{lng}}/{{ns}}.json')
     },
-    fallbackLng: 'en',
+    fallbackLng: 'zh',
     debug: isDev,
     interpolation: {
       escapeValue: false
