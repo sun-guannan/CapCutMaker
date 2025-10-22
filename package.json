@@ -1,6 +1,6 @@
 {
   "name": "@sun-guannan/capcutmaker",
-  "version": "0.2.19",
+  "version": "0.2.20",
   "description": "CapCut Helper Application",
   "main": "main.js",
   "scripts": {
@@ -94,7 +94,7 @@
   "dependencies": {
     "@ant-design/icons": "^5.2.6",
     "adm-zip": "^0.5.16",
-    "antd": "^5.12.2",
+    "antd": "^5.27.0",
     "axios": "^1.11.0",
     "electron-log": "^5.4.2",
     "electron-reload": "^2.0.0-alpha.1",
